@@ -19,8 +19,7 @@ public final class MatchResult {
     public static MatchResult notEnoughPositions() {
         return new MatchResult(MatchingOutcome.NOT_ENOUGH_POSITIONS, null, new LinkedList<>());
     }
-    public static MatchResult notEnoughTrades()
-    {
+    public static MatchResult notEnoughTrades() {
         return new MatchResult(MatchingOutcome.NOT_ENOUGH_TRADE , null , new LinkedList<>());
     }
     private MatchResult(MatchingOutcome outcome, Order remainder, LinkedList<Trade> trades) {
@@ -28,22 +27,6 @@ public final class MatchResult {
         this.remainder = remainder;
         this.trades = trades;
     }
-    public boolean hasTradedThisQuantity(int quantity)
-    {
-        int sum = 0 ;
-        for (int i = 0; i < trades.size(); i++) {
-            Trade trade = trades.get(i);
-            sum += trade.getQuantity();
-        }
-        if (sum >= quantity)
-        {
-            return true;
-        }
-        else {
-            return false;
-        }
-    }
-
     public MatchingOutcome outcome() {
         return outcome;
     }

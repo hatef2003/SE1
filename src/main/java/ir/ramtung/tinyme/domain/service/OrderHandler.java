@@ -58,7 +58,7 @@ public class OrderHandler {
             }
             if (matchResult.outcome() == MatchingOutcome.NOT_ENOUGH_TRADE)
             {
-                eventPublisher.publish(new OrderRejectedEvent(enterOrderRq.getRequestId(), enterOrderRq.getOrderId(), List.of(Message.THERE_WAS_NOT_ENOUGH_TRADES)));
+                eventPublisher.publish(new OrderRejectedEvent(enterOrderRq.getRequestId(), enterOrderRq.getOrderId(), List.of(Message.TRADE_QUANTITY_LESS_THAN_MINIMUM)));
             }
 
             if (enterOrderRq.getRequestType() == OrderEntryType.NEW_ORDER) {

@@ -20,18 +20,34 @@ public class IcebergOrder extends Order {
         this.displayedQuantity = displayedQuantity;
     }
 
+    public IcebergOrder(long orderId, Security security, Side side, int quantity, int price, Broker broker, Shareholder shareholder, LocalDateTime entryTime, int peakSize, int displayedQuantity, OrderStatus status) {
+        this(orderId, security, side, quantity, price, broker, shareholder, entryTime, peakSize, displayedQuantity, status, 0);
+    }
+
     public IcebergOrder(long orderId, Security security, Side side, int quantity, int price, Broker broker, Shareholder shareholder, LocalDateTime entryTime, int peakSize, OrderStatus status , int minimumExecutionQuantity) {
         this(orderId, security, side, quantity, price, broker, shareholder, entryTime, peakSize, Math.min(peakSize, quantity), status, minimumExecutionQuantity);
     }
 
+    public IcebergOrder(long orderId, Security security, Side side, int quantity, int price, Broker broker, Shareholder shareholder, LocalDateTime entryTime, int peakSize, OrderStatus status) {
+        this(orderId, security, side, quantity, price, broker, shareholder, entryTime, peakSize, Math.min(peakSize, quantity), status, 0);
+    }
+
     public IcebergOrder(long orderId, Security security, Side side, int quantity, int price, Broker broker, Shareholder shareholder, LocalDateTime entryTime, int peakSize, int minimumExecutionQuantity) {
-        this(orderId, security, side, quantity, price, broker, shareholder, entryTime, peakSize, OrderStatus.NEW,minimumExecutionQuantity);
+        this(orderId, security, side, quantity, price, broker, shareholder, entryTime, peakSize, OrderStatus.NEW, minimumExecutionQuantity);
+    }
+
+    public IcebergOrder(long orderId, Security security, Side side, int quantity, int price, Broker broker, Shareholder shareholder, LocalDateTime entryTime, int peakSize) {
+        this(orderId, security, side, quantity, price, broker, shareholder, entryTime, peakSize, OrderStatus.NEW, 0);
     }
 
     public IcebergOrder(long orderId, Security security, Side side, int quantity, int price, Broker broker, Shareholder shareholder, int peakSize , int minimumExecutionQuantity) {
-        super(orderId, security, side, quantity, price, broker, shareholder,minimumExecutionQuantity);
+        super(orderId, security, side, quantity, price, broker, shareholder, minimumExecutionQuantity);
         this.peakSize = peakSize;
         this.displayedQuantity = Math.min(peakSize, quantity);
+    }
+
+    public IcebergOrder(long orderId, Security security, Side side, int quantity, int price, Broker broker, Shareholder shareholder, int peakSize) {
+        this(orderId, security, side, quantity, price, broker, shareholder, peakSize, 0);
     }
 
     @Override
