@@ -71,7 +71,9 @@ public class Matcher {
         for (Trade trade : trades) {
             LinkedList<Trade> tempListTrade = new LinkedList<>();
             tempListTrade.add(trade);
-            rollbackTrades(trade.getBuy(), tempListTrade);
+            newOrder.getBroker().decreaseCreditBy(trade.getPrice()*trade.getQuantity());
+            //TODO
+//            rollbackTrades(trade.getBuy(), tempListTrade);
         }
     }
 
