@@ -77,7 +77,8 @@ public class Matcher {
 
     public MatchResult execute(Order order) {
         MatchResult result = match(order);
-        if (result.outcome() == MatchingOutcome.NOT_ENOUGH_CREDIT)
+        if (result.outcome() == MatchingOutcome.NOT_ENOUGH_CREDIT ||
+                result.outcome() == MatchingOutcome.NOT_ENOUGH_TRADE)
             return result;
 
         if (result.remainder().getQuantity() > 0) {

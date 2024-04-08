@@ -559,5 +559,10 @@ public class OrderHandlerTest {
         assertThat(shareholder1.hasEnoughPositionsOn(security, 100_000)).isTrue();
         assertThat(shareholder.hasEnoughPositionsOn(security, 500)).isTrue();
     }
-
+    @Test
+    void trade_quantity_less_than_minimum() {
+        orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(1, "ABC", 200, LocalDateTime.now(),
+                Side.SELL, 300, 15450, 2, shareholder.getShareholderId(), 0, 1));
+        verify(eventPublisher).publish(new OrderRejectedEvent(1, 200, List.of(Message.TRADE_QUANTITY_LESS_THAN_MINIMUM)));
+    }
 }
