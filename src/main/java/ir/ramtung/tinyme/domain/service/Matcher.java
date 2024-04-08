@@ -45,10 +45,10 @@ public class Matcher {
             }
         }
         if (trades_quantity >= newOrder.getMinimumExecutionQuantity()) {
+            return MatchResult.executed(newOrder, trades);
+        } else {
             rollbackTrades(newOrder, trades);
             return MatchResult.notEnoughTrades();
-        } else {
-            return MatchResult.executed(newOrder, trades);
         }
     }
 
