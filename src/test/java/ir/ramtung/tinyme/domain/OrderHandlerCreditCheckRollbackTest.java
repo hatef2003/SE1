@@ -64,14 +64,14 @@ public class OrderHandlerCreditCheckRollbackTest {
         brokerRepository.addBroker(broker3);
         OrderBook orderBook = security.getOrderBook();
         List<Order> orders = Arrays.asList(
-                new Order(100, security, Side.SELL, 30, 500, broker1, shareholder),
-                new Order(110, security, Side.SELL, 20, 500, broker2, shareholder),
-                new Order(120, security, Side.SELL, 20, 600, broker2, shareholder)
+                new Order(100, security, Side.SELL, 30, 500, broker1, shareholder,0),
+                new Order(110, security, Side.SELL, 20, 500, broker2, shareholder,0),
+                new Order(120, security, Side.SELL, 20, 600, broker2, shareholder,0)
         );
         orders.forEach(orderBook::enqueue);
 
 
-        orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(1, security.getIsin(), 200, LocalDateTime.now(), Side.BUY, 100, 550, broker3.getBrokerId(), shareholder.getShareholderId(), 0));
+        orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(1, security.getIsin(), 200, LocalDateTime.now(), Side.BUY, 100, 550, broker3.getBrokerId(), shareholder.getShareholderId(), 0,0));
 
         assertThat(broker1.getCredit()).isEqualTo(100_000);
         assertThat(broker2.getCredit()).isEqualTo(100_000);
@@ -98,14 +98,14 @@ public class OrderHandlerCreditCheckRollbackTest {
         brokerRepository.addBroker(broker3);
         OrderBook orderBook = security.getOrderBook();
         List<Order> orders = Arrays.asList(
-                new IcebergOrder(1, security, Side.SELL, 45, 1545, broker1, shareholder, 200),
-                new Order(2, security, Side.SELL, 7, 1545, broker2, shareholder),
-                new Order(3, security, Side.SELL, 10, 1550, broker2, shareholder)
+                new IcebergOrder(1, security, Side.SELL, 45, 1545, broker1, shareholder, 200,0),
+                new Order(2, security, Side.SELL, 7, 1545, broker2, shareholder,0),
+                new Order(3, security, Side.SELL, 10, 1550, broker2, shareholder,0)
         );
         orders.forEach(orderBook::enqueue);
 
         orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(1, security.getIsin(), 200, LocalDateTime.now(),
-                Side.BUY, 60, 1545, broker3.getBrokerId(), shareholder.getShareholderId(), 0));
+                Side.BUY, 60, 1545, broker3.getBrokerId(), shareholder.getShareholderId(), 0, 0));
 
         assertThat(broker1.getCredit()).isEqualTo(100_000);
         assertThat(broker2.getCredit()).isEqualTo(100_000);
@@ -132,10 +132,10 @@ public class OrderHandlerCreditCheckRollbackTest {
         brokerRepository.addBroker(broker3);
         OrderBook orderBook = security.getOrderBook();
         List<Order> orders = Arrays.asList(
-                new IcebergOrder(1, security, Side.SELL, 45, 1545, broker1, shareholder, 200),
-                new Order(2, security, Side.SELL, 7, 1545, broker2, shareholder),
-                new Order(3, security, Side.SELL, 10, 1550, broker2, shareholder),
-                new Order(4, security, Side.BUY, 60, 1540, broker3, shareholder)
+                new IcebergOrder(1, security, Side.SELL, 45, 1545, broker1, shareholder, 200,0),
+                new Order(2, security, Side.SELL, 7, 1545, broker2, shareholder,0),
+                new Order(3, security, Side.SELL, 10, 1550, broker2, shareholder,0),
+                new Order(4, security, Side.BUY, 60, 1540, broker3, shareholder,0)
         );
         orders.forEach(orderBook::enqueue);
 

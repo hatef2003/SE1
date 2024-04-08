@@ -11,13 +11,14 @@ public class Matcher {
     public MatchResult match(Order newOrder) {
         OrderBook orderBook = newOrder.getSecurity().getOrderBook();
         LinkedList<Trade> trades = new LinkedList<>();
-
+        int trades_quantity = 0;
         while (orderBook.hasOrderOfType(newOrder.getSide().opposite()) && newOrder.getQuantity() > 0) {
             Order matchingOrder = orderBook.matchWithFirst(newOrder);
             if (matchingOrder == null)
                 break;
 
-            Trade trade = new Trade(newOrder.getSecurity(), matchingOrder.getPrice(), Math.min(newOrder.getQuantity(), matchingOrder.getQuantity()), newOrder, matchingOrder);
+            Trade trade = new Trade(newOrder.getSecurity(), matchingOrder.getPrice(),
+                    Math.min(newOrder.getQuantity(), matchingOrder.getQuantity()), newOrder, matchingOrder);
             if (newOrder.getSide() == Side.BUY) {
                 if (trade.buyerHasEnoughCredit())
                     trade.decreaseBuyersCredit();
@@ -28,7 +29,7 @@ public class Matcher {
             }
             trade.increaseSellersCredit();
             trades.add(trade);
-
+            trades_quantity += trade.getQuantity();
             if (newOrder.getQuantity() >= matchingOrder.getQuantity()) {
                 newOrder.decreaseQuantity(matchingOrder.getQuantity());
                 orderBook.removeFirst(matchingOrder.getSide());
@@ -43,7 +44,12 @@ public class Matcher {
                 newOrder.makeQuantityZero();
             }
         }
-        return MatchResult.executed(newOrder, trades);
+        if (trades_quantity >= newOrder.getMinimumExecutionQuantity()) {
+            rollbackTrades(newOrder, trades);
+            return MatchResult.notEnoughTrades();
+        } else {
+            return MatchResult.executed(newOrder, trades);
+        }
     }
 
     private void rollbackTrades(Order newOrder, LinkedList<Trade> trades) {

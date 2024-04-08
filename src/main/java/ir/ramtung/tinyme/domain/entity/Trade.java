@@ -30,6 +30,10 @@ public class Trade {
             this.sell = snapshot1;
         }
     }
+    public int getQuantity()
+    {
+        return quantity;
+    }
 
     public long getTradedValue() {
         return (long) price * quantity;
