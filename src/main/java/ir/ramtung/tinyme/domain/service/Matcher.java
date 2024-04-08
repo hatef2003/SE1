@@ -11,7 +11,7 @@ public class Matcher {
     public MatchResult match(Order newOrder) {
         OrderBook orderBook = newOrder.getSecurity().getOrderBook();
         LinkedList<Trade> trades = new LinkedList<>();
-        int trades_quantity = 0;
+        int tradesQuantity = 0;
         while (orderBook.hasOrderOfType(newOrder.getSide().opposite()) && newOrder.getQuantity() > 0) {
             Order matchingOrder = orderBook.matchWithFirst(newOrder);
             if (matchingOrder == null)
@@ -29,7 +29,7 @@ public class Matcher {
             }
             trade.increaseSellersCredit();
             trades.add(trade);
-            trades_quantity += trade.getQuantity();
+            tradesQuantity += trade.getQuantity();
             if (newOrder.getQuantity() >= matchingOrder.getQuantity()) {
                 newOrder.decreaseQuantity(matchingOrder.getQuantity());
                 orderBook.removeFirst(matchingOrder.getSide());
@@ -44,16 +44,13 @@ public class Matcher {
                 newOrder.makeQuantityZero();
             }
         }
-        if (trades_quantity >= newOrder.getMinimumExecutionQuantity()) {
+        if (tradesQuantity >= newOrder.getMinimumExecutionQuantity())
             return MatchResult.executed(newOrder, trades);
-        } else {
+        else {
             if (newOrder.getSide() == Side.SELL)
-            {
                 rollbackSellTrades(newOrder, trades);
-            }
-            else{
+            else
                 rollbackTrades(newOrder, trades);
-            }
             return MatchResult.notEnoughTrades();
         }
     }
@@ -71,11 +68,10 @@ public class Matcher {
     private void rollbackSellTrades(Order newOrder , LinkedList<Trade> trades)
     {
         assert newOrder.getSide() == Side.SELL;
-        for (int i =0 ; i < trades.size() ; i++)
-        {
-            LinkedList<Trade> tempListTrade = new LinkedList<Trade>();
-            tempListTrade .add(trades.get(i));
-            rollbackTrades(trades.get(i).getBuy(),tempListTrade);
+        for (Trade trade : trades) {
+            LinkedList<Trade> tempListTrade = new LinkedList<>();
+            tempListTrade.add(trade);
+            rollbackTrades(trade.getBuy(), tempListTrade);
         }
     }
 
