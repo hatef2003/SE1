@@ -47,7 +47,13 @@ public class Matcher {
         if (trades_quantity >= newOrder.getMinimumExecutionQuantity()) {
             return MatchResult.executed(newOrder, trades);
         } else {
-            rollbackTrades(newOrder, trades);
+            if (newOrder.getSide() == Side.SELL)
+            {
+                rollbackSellTrades(newOrder, trades);
+            }
+            else{
+                rollbackTrades(newOrder, trades);
+            }
             return MatchResult.notEnoughTrades();
         }
     }
@@ -60,6 +66,16 @@ public class Matcher {
         ListIterator<Trade> it = trades.listIterator(trades.size());
         while (it.hasPrevious()) {
             newOrder.getSecurity().getOrderBook().restoreSellOrder(it.previous().getSell());
+        }
+    }
+    private void rollbackSellTrades(Order newOrder , LinkedList<Trade> trades)
+    {
+        assert newOrder.getSide() == Side.SELL;
+        for (int i =0 ; i < trades.size() ; i++)
+        {
+            LinkedList<Trade> tempListTrade = new LinkedList<Trade>();
+            tempListTrade .add(trades.get(i));
+            rollbackTrades(trades.get(i).getBuy(),tempListTrade);
         }
     }
 
