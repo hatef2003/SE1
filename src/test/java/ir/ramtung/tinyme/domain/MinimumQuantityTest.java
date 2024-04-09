@@ -67,7 +67,7 @@ class minimumQuantityTest {
         Order newOrder = new Order(2, security, SELL, 500, 15650, broker, shareholder,350);
         MatchResult result = matcher.match(newOrder);
         assertThat(broker.getCredit()).isEqualTo(brokerCreditBeforeTrade);
-//        assertThat(security.getOrderBook().getBuyQueue().get(0).getQuantity()).isEqualTo(304);
+        assertThat(security.getOrderBook().getBuyQueue().get(0).getQuantity()).isEqualTo(304);
         assertThat(result.outcome()).isEqualTo(MatchingOutcome.NOT_ENOUGH_TRADE);
     }
     @Test
@@ -76,7 +76,7 @@ class minimumQuantityTest {
         long brokerCreditBeforeTrade = broker.getCredit();
         Order newOrder = new Order(2, security, SELL, 500, 15650, broker, shareholder,304);
         MatchResult result = matcher.match(newOrder);
-        assertThat(broker.getCredit()).isEqualTo(brokerCreditBeforeTrade);
+        assertThat(broker.getCredit()).isEqualTo(brokerCreditBeforeTrade + (15700 * 304));
         assertThat(result.outcome()).isEqualTo(MatchingOutcome.EXECUTED);
     }
     //TODO all this shits for iceberg
