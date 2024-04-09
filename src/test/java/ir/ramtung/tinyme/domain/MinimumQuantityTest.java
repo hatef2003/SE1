@@ -22,15 +22,15 @@ import static org.assertj.core.api.Assertions.*;
 
 @SpringBootTest
 @Import(MockedJMSTestConfig.class)
-class minimumQuantityTest {
+class MinimumQuantityTest {
     private Security security;
     private Broker broker;
     private Shareholder shareholder;
-    private List<Order> orders;
     @Autowired
     Matcher matcher;
     @BeforeEach
     void setupOrderBook() {
+        List<Order> orders;
         security = Security.builder().build();
         broker = Broker.builder().brokerId(0).credit(1_000_000_000L).build();
         shareholder = Shareholder.builder().shareholderId(0).build();
@@ -42,7 +42,7 @@ class minimumQuantityTest {
         orders.forEach(order -> security.getOrderBook().enqueue(order));
     }
     @Test
-    void buy_order_not_enough_trade()
+    void buy_order_not_enough_trade_rollback()
     {
         long brokerCreditBeforeTrade = broker.getCredit();
         Order newOrder = new Order(2, security, BUY, 200, 15850, broker, shareholder,100);
@@ -61,7 +61,7 @@ class minimumQuantityTest {
         assertThat(result.outcome()).isEqualTo(MatchingOutcome.EXECUTED);
     }
     @Test
-    void sell_order_not_enough_trade()
+    void sell_order_not_enough_trade_rollback()
     {
         long brokerCreditBeforeTrade = broker.getCredit();
         Order newOrder = new Order(2, security, SELL, 500, 15650, broker, shareholder,350);
@@ -74,11 +74,52 @@ class minimumQuantityTest {
     void sell_order_has_enough_trade()
     {
         long brokerCreditBeforeTrade = broker.getCredit();
-        Order newOrder = new Order(2, security, SELL, 500, 15650, broker, shareholder,304);
+        Order newOrder = new Order(2, security, SELL, 500, 15650, broker, shareholder, 304);
         MatchResult result = matcher.match(newOrder);
         assertThat(broker.getCredit()).isEqualTo(brokerCreditBeforeTrade + (15700 * 304));
         assertThat(result.outcome()).isEqualTo(MatchingOutcome.EXECUTED);
     }
-    //TODO all this shits for iceberg
+    @Test
+    void iceberg_buy_order_not_enough_trade_rollback()
+    {
+        long brokerCreditBeforeTrade = broker.getCredit();
+        IcebergOrder newOrder = new IcebergOrder(2, security, BUY, 200, 15850, broker, shareholder,
+                100, 100);
+        MatchResult result = matcher.match(newOrder);
+        assertThat(broker.getCredit()).isEqualTo(brokerCreditBeforeTrade);
+        assertThat(security.getOrderBook().getSellQueue().get(0).getQuantity()).isEqualTo(65);
+        assertThat(result.outcome()).isEqualTo(MatchingOutcome.NOT_ENOUGH_TRADE);
+    }
+    @Test
+    void iceberg_buy_order_has_enough_trade()
+    {
+        long brokerCreditBeforeTrade = broker.getCredit();
+        Order newOrder = new IcebergOrder(2 , security , BUY , 200 , 15850 , broker , shareholder ,
+                100, 65);
+        MatchResult result = matcher.match(newOrder);
+        assertThat(broker.getCredit()).isEqualTo(brokerCreditBeforeTrade);
+        assertThat(result.outcome()).isEqualTo(MatchingOutcome.EXECUTED);
+    }
+    @Test
+    void iceberg_sell_order_not_enough_trade_rollback()
+    {
+        long brokerCreditBeforeTrade = broker.getCredit();
+        Order newOrder = new IcebergOrder(2, security, SELL, 500, 15650, broker, shareholder,
+                100, 350);
+        MatchResult result = matcher.match(newOrder);
+        assertThat(broker.getCredit()).isEqualTo(brokerCreditBeforeTrade);
+        assertThat(security.getOrderBook().getBuyQueue().get(0).getQuantity()).isEqualTo(304);
+        assertThat(result.outcome()).isEqualTo(MatchingOutcome.NOT_ENOUGH_TRADE);
+    }
+    @Test
+    void iceberg_sell_order_has_enough_trade()
+    {
+        long brokerCreditBeforeTrade = broker.getCredit();
+        Order newOrder = new IcebergOrder(2, security, SELL, 500, 15650, broker, shareholder,
+                100, 304);
+        MatchResult result = matcher.match(newOrder);
+        assertThat(broker.getCredit()).isEqualTo(brokerCreditBeforeTrade + (15700 * 304));
+        assertThat(result.outcome()).isEqualTo(MatchingOutcome.EXECUTED);
+    }
 
 }
