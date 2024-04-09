@@ -27,7 +27,7 @@ class MinimumExecutionQuantityTest {
     void setupOrderBook() {
         List<Order> orders;
         security = Security.builder().build();
-        broker = Broker.builder().brokerId(0).credit(1_000_000L).build();
+        broker = Broker.builder().brokerId(0).credit(10_000_000L).build();
         shareholder = Shareholder.builder().shareholderId(0).build();
         shareholder.incPosition(security, 100_000);
         orders = Arrays.asList(
