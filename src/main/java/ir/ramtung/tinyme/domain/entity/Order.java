@@ -106,7 +106,6 @@ public class Order {
     public void updateFromRequest(EnterOrderRq updateOrderRq) {
         quantity = updateOrderRq.getQuantity();
         price = updateOrderRq.getPrice();
-        // minimumExecutionQuantity = 0 ;
     }
 
     public long getValue() {
