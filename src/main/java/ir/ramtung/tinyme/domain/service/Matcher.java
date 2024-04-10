@@ -8,7 +8,11 @@ import java.util.ListIterator;
 
 @Service
 public class Matcher {
+
     public MatchResult match(Order newOrder) {
+        boolean isUpdate = newOrder.getSecurity().getOrderBook().findByOrderId(newOrder.getSide(), newOrder.getOrderId())!=null;
+        newOrder.getSecurity().getOrderBook().removeByOrderId(newOrder.getSide(), newOrder.getOrderId());
+
         OrderBook orderBook = newOrder.getSecurity().getOrderBook();
         LinkedList<Trade> trades = new LinkedList<>();
         int tradesQuantity = 0;
@@ -44,7 +48,7 @@ public class Matcher {
                 newOrder.makeQuantityZero();
             }
         }
-        if (tradesQuantity >= newOrder.getMinimumExecutionQuantity())
+        if (tradesQuantity >= newOrder.getMinimumExecutionQuantity() || isUpdate)
             return MatchResult.executed(newOrder, trades);
         else {
             if (newOrder.getSide() == Side.SELL)

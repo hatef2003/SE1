@@ -8,6 +8,7 @@ import ir.ramtung.tinyme.messaging.request.DeleteOrderRq;
 import ir.ramtung.tinyme.messaging.request.EnterOrderRq;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.platform.commons.support.SearchOption;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
@@ -121,5 +122,47 @@ class MinimumQuantityTest {
         assertThat(broker.getCredit()).isEqualTo(brokerCreditBeforeTrade + (15700 * 304));
         assertThat(result.outcome()).isEqualTo(MatchingOutcome.EXECUTED);
     }
+    @Test 
+    void new_order_by_request_not_enough_trade()
+    {
+        long broker_credit_before_trade = broker.getCredit();
+        EnterOrderRq newOrderRequest = EnterOrderRq.createNewOrderRq(0, security.getIsin(), 5, LocalDateTime.now(),BUY, 200, 15850, 0, shareholder.getShareholderId(), 0,100);
+        MatchResult result = security.newOrder(newOrderRequest, broker, shareholder, matcher);
+        assertThat(result.outcome()).isEqualTo(MatchingOutcome.NOT_ENOUGH_TRADE);
+        assertThat(broker.getCredit()).isEqualTo(broker_credit_before_trade);
+        assertThat(security.getOrderBook().getSellQueue().get(0).getQuantity()).isEqualTo(65);
+    }
+    @Test
+    void  new_order_by_request_enough_trade()
+    {
+        long broker_credit_before_trade = broker.getCredit();
+        EnterOrderRq newOrderRequest = EnterOrderRq.createNewOrderRq(0, security.getIsin(), 5, LocalDateTime.now(),BUY, 55, 15850, 0, shareholder.getShareholderId(), 0,45);
+        MatchResult result = security.newOrder(newOrderRequest, broker, shareholder, matcher);
+        assertThat(result.outcome()).isEqualTo(MatchingOutcome.EXECUTED);
+        assertThat(broker.getCredit()).isEqualTo(broker_credit_before_trade);
+        assertThat(security.getOrderBook().getSellQueue().get(0).getQuantity()).isEqualTo(10);
+    }
+    @Test
+    void update_order_check()
+    {
+        long brokerCreditBeforeTrade = broker.getCredit();
+        EnterOrderRq newOrderRequest = EnterOrderRq.createNewOrderRq(0 , security.getIsin() ,2 , LocalDateTime.now() , BUY , 200 ,15850 , 0,shareholder.getShareholderId(),0,65);
+        Order newOrder2 = new Order(9, security, SELL, 55,18000,broker, shareholder );
+        MatchResult addBuyOrder = security.newOrder(newOrderRequest,broker,shareholder,matcher);
+
+        var a = security.getOrderBook().findByOrderId(BUY , 2);
+        System.out.println(a);
+        matcher.match(newOrder2);
+        EnterOrderRq updateOrderRq = EnterOrderRq.createUpdateOrderRq(0, security.getIsin(), 2, LocalDateTime.now(),BUY, 135, 18000, 0, shareholder.getShareholderId(), 0);
+        MatchResult result2;
+        try {
+            result2 = security.updateOrder(updateOrderRq, matcher);
+            assertThat(result2.outcome()).isEqualTo(MatchingOutcome.EXECUTED);
+            
+        } catch (Exception e) {
+            System.out.println("Something wrong");
+        }
+    }
+
 
 }
