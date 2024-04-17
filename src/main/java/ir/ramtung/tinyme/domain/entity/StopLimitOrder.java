@@ -12,7 +12,36 @@ import java.time.LocalDateTime;
 @ToString(callSuper = true)
 public class StopLimitOrder extends Order{
     int stopLimit;
-    //TODO: overload constructor for other implementations of Order
+    public boolean isActive(int lastTradePrice)
+    {
+        if (lastTradePrice == -1 )
+        {
+            return false; 
+        }
+        if(this.getSide() == Side.BUY )
+        {
+
+            if(lastTradePrice >= stopLimit )
+            {
+                return true;
+            }
+            else
+            {
+                return false ;
+            }
+        }
+        else 
+        {
+            if (lastTradePrice <= stopLimit)
+            {
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+    }
     public StopLimitOrder(long orderId, Security security, Side side, int quantity, int price, Broker broker, Shareholder shareholder,LocalDateTime entryTime, OrderStatus status , int stopLimit) {
         // not sure if order status should always be queued, check again
         super(orderId, security, side, quantity, price, broker, shareholder, entryTime, status, 0);

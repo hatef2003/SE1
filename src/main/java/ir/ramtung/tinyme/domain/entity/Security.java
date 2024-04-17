@@ -8,6 +8,7 @@ import ir.ramtung.tinyme.messaging.Message;
 import lombok.Builder;
 import lombok.Getter;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Getter
@@ -20,6 +21,8 @@ public class Security {
     private int lotSize = 1;
     @Builder.Default
     private OrderBook orderBook = new OrderBook();
+    @Builder.Default
+    ArrayList < StopLimitOrder> deactivatedOrders  = new ArrayList<StopLimitOrder>();
     @Builder.Default 
     private int lastTradePrice = -1;
     public MatchResult newOrder(EnterOrderRq enterOrderRq, Broker broker, Shareholder shareholder, Matcher matcher) {
@@ -33,8 +36,17 @@ public class Security {
                     enterOrderRq.getQuantity(), enterOrderRq.getPrice(), broker, shareholder, enterOrderRq.getEntryTime(),enterOrderRq.getMinimumExecutionQuantity());
         else if (enterOrderRq.getStopLimit() != 0 && enterOrderRq.getPeakSize() == 0 && enterOrderRq.getMinimumExecutionQuantity()==0)
         {
-            order = new StopLimitOrder(enterOrderRq.getOrderId(), this, enterOrderRq.getSide(),
+            StopLimitOrder newOrder = new StopLimitOrder(enterOrderRq.getOrderId(), this, enterOrderRq.getSide(),
                     enterOrderRq.getQuantity(), enterOrderRq.getPrice(), broker, shareholder, enterOrderRq.getEntryTime(),OrderStatus.NEW , enterOrderRq.getStopLimit());
+            if (newOrder.isActive(lastTradePrice))
+            {
+                order = newOrder;
+            }
+            else 
+            {
+                deactivatedOrders.add(newOrder);
+                return MatchResult.executed(newOrder, null);
+            }
         }
         //suppose that the input is valid
         else
@@ -42,7 +54,13 @@ public class Security {
                     enterOrderRq.getQuantity(), enterOrderRq.getPrice(), broker, shareholder,
                     enterOrderRq.getEntryTime(), enterOrderRq.getPeakSize(),enterOrderRq.getMinimumExecutionQuantity());
 
-        return matcher.execute(order);
+        MatchResult matchResult = matcher.execute(order);
+        if (matchResult.trades().size()!=0)
+        {
+            lastTradePrice = matchResult.trades().getLast().getPrice();
+        }
+        
+        return matchResult;
     }
 
     public void deleteOrder(DeleteOrderRq deleteOrderRq) throws InvalidRequestException {
@@ -95,4 +113,5 @@ public class Security {
         }
         return matchResult;
     }
+    
 }
