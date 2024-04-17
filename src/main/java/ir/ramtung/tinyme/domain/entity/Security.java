@@ -20,16 +20,23 @@ public class Security {
     private int lotSize = 1;
     @Builder.Default
     private OrderBook orderBook = new OrderBook();
-
+    @Builder.Default 
+    private int lastTradePrice = -1;
     public MatchResult newOrder(EnterOrderRq enterOrderRq, Broker broker, Shareholder shareholder, Matcher matcher) {
         if (enterOrderRq.getSide() == Side.SELL &&
                 !shareholder.hasEnoughPositionsOn(this,
                 orderBook.totalSellQuantityByShareholder(shareholder) + enterOrderRq.getQuantity()))
             return MatchResult.notEnoughPositions();
         Order order;
-        if (enterOrderRq.getPeakSize() == 0)
+        if (enterOrderRq.getPeakSize() == 0 && enterOrderRq.getStopLimit() ==0)
             order = new Order(enterOrderRq.getOrderId(), this, enterOrderRq.getSide(),
                     enterOrderRq.getQuantity(), enterOrderRq.getPrice(), broker, shareholder, enterOrderRq.getEntryTime(),enterOrderRq.getMinimumExecutionQuantity());
+        else if (enterOrderRq.getStopLimit() != 0 && enterOrderRq.getPeakSize() == 0 && enterOrderRq.getMinimumExecutionQuantity()==0)
+        {
+            order = new StopLimitOrder(enterOrderRq.getOrderId(), this, enterOrderRq.getSide(),
+                    enterOrderRq.getQuantity(), enterOrderRq.getPrice(), broker, shareholder, enterOrderRq.getEntryTime(),OrderStatus.NEW , enterOrderRq.getStopLimit());
+        }
+        //suppose that the input is valid
         else
             order = new IcebergOrder(enterOrderRq.getOrderId(), this, enterOrderRq.getSide(),
                     enterOrderRq.getQuantity(), enterOrderRq.getPrice(), broker, shareholder,
