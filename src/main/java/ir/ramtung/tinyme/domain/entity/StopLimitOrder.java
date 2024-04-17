@@ -57,5 +57,12 @@ public class StopLimitOrder extends Order{
     public Order snapshotWithQuantity(int newQuantity) {
         return new StopLimitOrder(orderId, security, side, newQuantity, price, broker, shareholder, entryTime, OrderStatus.SNAPSHOT, stopLimit);
     }
+    @Override
+    public void updateFromRequest(EnterOrderRq updateOrderRq) {
+        quantity = updateOrderRq.getQuantity();
+        price = updateOrderRq.getPrice();
+        stopLimit = updateOrderRq.getStopLimit();
+        
+    }
 
 }

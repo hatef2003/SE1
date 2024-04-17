@@ -67,12 +67,14 @@ public class OrderHandler {
                 eventPublisher.publish(new OrderUpdatedEvent(enterOrderRq.getRequestId(), enterOrderRq.getOrderId()));
             if (!matchResult.trades().isEmpty()) {
                 eventPublisher.publish(new OrderExecutedEvent(enterOrderRq.getRequestId(), enterOrderRq.getOrderId(), matchResult.trades().stream().map(TradeDTO::new).collect(Collectors.toList())));
-                for (var StopLimitOrder  : security.getDeactivatedOrders())
+                for (var stopLimitOrder  : security.getDeactivatedOrders())
                 {
-                    if(StopLimitOrder.isActive(security.getLastTradePrice()))
+                    if(stopLimitOrder.isActive(security.getLastTradePrice()))
                     {
-                        matcher.execute(StopLimitOrder);
-                        eventPublisher.publish(new OrderActivatedEvent(enterOrderRq.getRequestId() , enterOrderRq.getOrderId()));
+                        security.removeFromDeactivatedList(stopLimitOrder.getOrderId());
+                        Order newOrder = new Order(stopLimitOrder);
+                        matcher.execute(newOrder);
+                        eventPublisher.publish(new OrderActivatedEvent(enterOrderRq.getRequestId() , enterOrderRq.getOrderId(), matchResult.trades().stream().map(TradeDTO::new).collect(Collectors.toList())));
                     }
                 }
             }
@@ -93,6 +95,7 @@ public class OrderHandler {
     }
 
     private void validateEnterOrderRq(EnterOrderRq enterOrderRq) throws InvalidRequestException {
+        //TODO check Update and Creation of new type off Order (StopLimitOrder)
         List<String> errors = new LinkedList<>();
         if (enterOrderRq.getOrderId() <= 0)
             errors.add(Message.INVALID_ORDER_ID);
