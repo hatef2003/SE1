@@ -66,13 +66,20 @@ public class OrderHandler {
             }
             else
                 eventPublisher.publish(new OrderUpdatedEvent(enterOrderRq.getRequestId(), enterOrderRq.getOrderId()));
+
+            for (var activatedOrder : security.getActivatedOrders())
+            { // duplicated activated list not empty only can happen to new and updated stoplimit orders
+                eventPublisher.publish(new OrderActivatedEvent());
+                security.removeFromActivatedList(activatedOrder.getOrderId());
+            }
+
             if (!matchResult.trades().isEmpty()) {
                 eventPublisher.publish(new OrderExecutedEvent(enterOrderRq.getRequestId(), enterOrderRq.getOrderId(), matchResult.trades().stream().map(TradeDTO::new).collect(Collectors.toList())));
                 ArrayList<StopLimitOrder> activatedList = new ArrayList<StopLimitOrder>() ; 
-                for (var stopLimitOrder  : security.getDeactivatedOrders())
+                for (var stopLimitOrder : security.getDeactivatedOrders())
                 {
                     if(stopLimitOrder.isActive(security.getLastTradePrice()))
-                   { 
+                   {
                         activatedList.add(stopLimitOrder);
                         security.removeFromDeactivatedList(stopLimitOrder.getOrderId());
                    }
@@ -82,9 +89,13 @@ public class OrderHandler {
                     stopLimitOrder.restoreBrokerCredit();
                     Order newOrder = new Order(stopLimitOrder);
                     MatchResult result = matcher.execute(newOrder);
-                    int lastTradePrice = result.trades().get(result.trades().size()-1).getPrice();
+                    int lastTradePrice = result.trades().get(result.trades().size()-1).getPrice(); //check
                     newOrder.getSecurity().setLastTradePrice(lastTradePrice);
                     eventPublisher.publish(new OrderActivatedEvent(enterOrderRq.getRequestId() , enterOrderRq.getOrderId(), matchResult.trades().stream().map(TradeDTO::new).collect(Collectors.toList())));
+                    if (!result.trades().isEmpty())
+                        eventPublisher.publish(new OrderExecutedEvent());
+
+                    // this for will never run, if condition is always false
                     for (var deactivatedOrder : security.getDeactivatedOrders())
                     {
                         if (deactivatedOrder.isActive(lastTradePrice))

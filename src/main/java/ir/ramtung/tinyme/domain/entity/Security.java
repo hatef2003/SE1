@@ -24,6 +24,8 @@ public class Security {
     @Builder.Default
     ArrayList<StopLimitOrder> deactivatedOrders = new ArrayList<StopLimitOrder>();
     @Builder.Default
+    ArrayList<StopLimitOrder> activatedOrders = new ArrayList<StopLimitOrder>();
+    @Builder.Default
     private int lastTradePrice = -1;
 
     public MatchResult newOrder(EnterOrderRq enterOrderRq, Broker broker, Shareholder shareholder, Matcher matcher) {
@@ -43,6 +45,7 @@ public class Security {
                     enterOrderRq.getQuantity(), enterOrderRq.getPrice(), broker, shareholder,
                     enterOrderRq.getEntryTime(), OrderStatus.NEW, enterOrderRq.getStopLimit());
             if (newOrder.isActive(lastTradePrice)) {
+                activatedOrders.add(newOrder);
                 order = newOrder;
             }
             else {
@@ -132,6 +135,8 @@ public class Security {
         else {
             stopLimitOrder.updateFromRequest(updateOrderRq);
             if (stopLimitOrder.isActive(lastTradePrice)) {
+                removeFromDeactivatedList(stopLimitOrder.getOrderId());
+                activatedOrders.add(stopLimitOrder);
                 MatchResult matchResult = matcher.execute(stopLimitOrder);
                 if (matchResult.trades().size() != 0) {
                     lastTradePrice = matchResult.trades().getLast().getPrice();
@@ -155,5 +160,10 @@ public class Security {
     {
         StopLimitOrder order = findStopLimitOrderById(id);
         deactivatedOrders.remove(order);
+    }
+
+    public void removeFromActivatedList(long id)
+    {
+        activatedOrders.removeIf(order -> order.getOrderId() == id);
     }
 }
