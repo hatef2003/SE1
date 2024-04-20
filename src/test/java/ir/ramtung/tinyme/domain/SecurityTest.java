@@ -190,5 +190,16 @@ class SecurityTest {
         assertThat(result.remainder().getQuantity()).isZero();
     }
 
+    @Test
+    void update_stop_limit_order_while_inactive() {
+        security = Security.builder().isin("TEST").build();
+        EnterOrderRq createRq = EnterOrderRq.createNewOrderRq(1, security.getIsin(), 1, LocalDateTime.now(),
+                BUY, 20, 10, broker.getBrokerId(), shareholder.getShareholderId(), 0, 0, 10000);
+        EnterOrderRq updateReq = EnterOrderRq.createUpdateOrderRq(2, security.getIsin(), 1, LocalDateTime.now(),
+                BUY, 20, 10, 0, 0, 0, 100);
 
+        assertThatNoException().isThrownBy(() -> security.newOrder(createRq, broker, shareholder, matcher));
+        assertThatNoException().isThrownBy(() -> security.updateOrder(updateReq, matcher));
+        assertThat(security.getDeactivatedOrders().get(0).getStopLimit()).isEqualTo(100);
+    }
 }
