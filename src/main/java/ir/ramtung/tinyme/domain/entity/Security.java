@@ -62,7 +62,10 @@ public class Security {
 
         return matchResult;
     }
-
+    public void setLastTradePrice(int price)
+    {
+        lastTradePrice = price;
+    }
     public void deleteOrder(DeleteOrderRq deleteOrderRq) throws InvalidRequestException {
         Order order = orderBook.findByOrderId(deleteOrderRq.getSide(), deleteOrderRq.getOrderId());
         if (order == null)

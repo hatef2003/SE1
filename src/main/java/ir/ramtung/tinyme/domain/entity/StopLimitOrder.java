@@ -47,6 +47,10 @@ public class StopLimitOrder extends Order{
         super(orderId, security, side, quantity, price, broker, shareholder, entryTime, status, 0);
         this.stopLimit = stopLimit;
     }
+    public  void restoreBrokerCredit()
+    {
+        broker.increaseCreditBy(quantity * price);
+    }
 
     @Override
     public Order snapshot() {

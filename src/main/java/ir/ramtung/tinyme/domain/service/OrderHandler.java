@@ -14,6 +14,7 @@ import ir.ramtung.tinyme.repository.SecurityRepository;
 import ir.ramtung.tinyme.repository.ShareholderRepository;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -67,16 +68,33 @@ public class OrderHandler {
                 eventPublisher.publish(new OrderUpdatedEvent(enterOrderRq.getRequestId(), enterOrderRq.getOrderId()));
             if (!matchResult.trades().isEmpty()) {
                 eventPublisher.publish(new OrderExecutedEvent(enterOrderRq.getRequestId(), enterOrderRq.getOrderId(), matchResult.trades().stream().map(TradeDTO::new).collect(Collectors.toList())));
+                ArrayList<StopLimitOrder> activatedList = new ArrayList<StopLimitOrder>() ; 
                 for (var stopLimitOrder  : security.getDeactivatedOrders())
                 {
                     if(stopLimitOrder.isActive(security.getLastTradePrice()))
-                    {
+                   { 
+                        activatedList.add(stopLimitOrder);
                         security.removeFromDeactivatedList(stopLimitOrder.getOrderId());
-                        Order newOrder = new Order(stopLimitOrder);
-                        matcher.execute(newOrder);
-                        eventPublisher.publish(new OrderActivatedEvent(enterOrderRq.getRequestId() , enterOrderRq.getOrderId(), matchResult.trades().stream().map(TradeDTO::new).collect(Collectors.toList())));
-                    }
+                   }
                 }
+               for (StopLimitOrder stopLimitOrder : activatedList)
+               {
+                    stopLimitOrder.restoreBrokerCredit();
+                    Order newOrder = new Order(stopLimitOrder);
+                    MatchResult result = matcher.execute(newOrder);
+                    int lastTradePrice = result.trades().get(result.trades().size()-1).getPrice();
+                    newOrder.getSecurity().setLastTradePrice(lastTradePrice);
+                    eventPublisher.publish(new OrderActivatedEvent(enterOrderRq.getRequestId() , enterOrderRq.getOrderId(), matchResult.trades().stream().map(TradeDTO::new).collect(Collectors.toList())));
+                    for (var deactivatedOrder : security.getDeactivatedOrders())
+                    {
+                        if (deactivatedOrder.isActive(lastTradePrice))
+                        {
+                            activatedList.add(deactivatedOrder);
+                            security.removeFromDeactivatedList(deactivatedOrder.getOrderId());
+                        }
+                    }
+               }
+               
             }
         } catch (InvalidRequestException ex) {
             eventPublisher.publish(new OrderRejectedEvent(enterOrderRq.getRequestId(), enterOrderRq.getOrderId(), ex.getReasons()));
