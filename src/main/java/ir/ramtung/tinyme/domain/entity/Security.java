@@ -70,11 +70,17 @@ public class Security {
     }
     public void deleteOrder(DeleteOrderRq deleteOrderRq) throws InvalidRequestException {
         Order order = orderBook.findByOrderId(deleteOrderRq.getSide(), deleteOrderRq.getOrderId());
-        if (order == null)
+        StopLimitOrder stopLimitOrder = findStopLimitOrderById(deleteOrderRq.getOrderId());
+        if (order == null && stopLimitOrder == null)
             throw new InvalidRequestException(Message.ORDER_ID_NOT_FOUND);
-        if (order.getSide() == Side.BUY)
-            order.getBroker().increaseCreditBy(order.getValue());
-        orderBook.removeByOrderId(deleteOrderRq.getSide(), deleteOrderRq.getOrderId());
+
+        if (order != null) {
+            if (order.getSide() == Side.BUY)
+                order.getBroker().increaseCreditBy(order.getValue());
+            orderBook.removeByOrderId(deleteOrderRq.getSide(), deleteOrderRq.getOrderId());
+        }
+        if (stopLimitOrder != null)
+            removeFromDeactivatedList(stopLimitOrder.getOrderId());
     }
 
     public MatchResult updateOrder(EnterOrderRq updateOrderRq, Matcher matcher) throws InvalidRequestException {
@@ -87,8 +93,8 @@ public class Security {
                 throw new InvalidRequestException(Message.INVALID_PEAK_SIZE);
             if (!(order instanceof IcebergOrder) && updateOrderRq.getPeakSize() != 0)
                 throw new InvalidRequestException(Message.CANNOT_SPECIFY_PEAK_SIZE_FOR_A_NON_ICEBERG_ORDER);
-            if (stopLimitOrder != null)
-                throw new InvalidRequestException(Message.CANNOT_UPDATE_ACTIVE_STOP_LIMIT_ORDER);
+            if (updateOrderRq.getStopLimit() != 0)
+                throw new InvalidRequestException(Message.CANNOT_UPDATE_STOP_LIMIT_FOR_ACTIVE_ORDERS);
 
             if (updateOrderRq.getSide() == Side.SELL &&
                     !order.getShareholder().hasEnoughPositionsOn(this,
