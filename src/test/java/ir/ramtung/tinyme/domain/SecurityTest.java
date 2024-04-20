@@ -202,4 +202,5 @@ class SecurityTest {
         assertThatNoException().isThrownBy(() -> security.updateOrder(updateReq, matcher));
         assertThat(security.getDeactivatedOrders().get(0).getStopLimit()).isEqualTo(100);
     }
+    
 }

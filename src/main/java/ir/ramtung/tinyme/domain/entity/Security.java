@@ -47,7 +47,7 @@ public class Security {
             }
             else {
                 deactivatedOrders.add(newOrder);
-                return MatchResult.executed(newOrder, null);
+                return MatchResult.executed(newOrder, List.of());
             }
         }
         // suppose that the input is valid
@@ -121,10 +121,17 @@ public class Security {
             }
             return matchResult;
         }
-        else
-        {
+        else {
             stopLimitOrder.updateFromRequest(updateOrderRq);
-            return MatchResult.executed(order, null);
+            if (stopLimitOrder.isActive(lastTradePrice)) {
+                MatchResult matchResult = matcher.execute(stopLimitOrder);
+                if (matchResult.trades().size() != 0) {
+                    lastTradePrice = matchResult.trades().getLast().getPrice();
+                }
+                return matchResult;
+            }
+            else
+                return MatchResult.executed(stopLimitOrder, List.of());
         }
     }
 

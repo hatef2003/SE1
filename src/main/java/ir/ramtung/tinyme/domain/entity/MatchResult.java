@@ -9,9 +9,7 @@ public final class MatchResult {
     private final Order remainder;
     private final LinkedList<Trade> trades;
 
-    public static MatchResult executed(Order remainder, List<Trade> trades) { // special case handled incorrectly
-        if (trades == null)
-            return new MatchResult(MatchingOutcome.EXECUTED, remainder, null);
+    public static MatchResult executed(Order remainder, List<Trade> trades) {
         return new MatchResult(MatchingOutcome.EXECUTED, remainder, new LinkedList<>(trades));
     }
 
