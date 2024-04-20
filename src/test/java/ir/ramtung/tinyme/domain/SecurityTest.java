@@ -202,5 +202,15 @@ class SecurityTest {
         assertThatNoException().isThrownBy(() -> security.updateOrder(updateReq, matcher));
         assertThat(security.getDeactivatedOrders().get(0).getStopLimit()).isEqualTo(100);
     }
-    
+    @Test
+    void trying_to_update_stop_limit_order_while_active() {
+        EnterOrderRq createRq = EnterOrderRq.createNewOrderRq(1, security.getIsin(), 1, LocalDateTime.now(),
+                BUY, 20, 10, broker.getBrokerId(), shareholder.getShareholderId(), 0, 0, 100);
+        EnterOrderRq updateReq = EnterOrderRq.createUpdateOrderRq(2, security.getIsin(), 1, LocalDateTime.now(),
+                BUY, 20, 10, 0, 0, 0, 200);
+
+        assertThatNoException().isThrownBy(() -> security.newOrder(createRq, broker, shareholder, matcher));
+        assertThatExceptionOfType(InvalidRequestException.class).isThrownBy(() -> security.updateOrder(updateReq, matcher));
+        assertThat(security.getDeactivatedOrders().get(0).getStopLimit()).isEqualTo(100);
+    }
 }
