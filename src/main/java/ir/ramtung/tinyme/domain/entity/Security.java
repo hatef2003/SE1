@@ -151,11 +151,20 @@ public class Security {
             }
             return matchResult;
         } else {
-            stopLimitOrder.updateFromRequest(updateOrderRq);
+
             if (stopLimitOrder.side == BUY) {
+                stopLimitOrder.restoreBrokerCredit();
                 deactivatedBuyOrders.remove(stopLimitOrder);
-                addToDeactivatedBuy(stopLimitOrder);
+                if (stopLimitOrder.getBroker().hasEnoughCredit(updateOrderRq.getPrice() * updateOrderRq.getQuantity()))
+                {
+                    addToDeactivatedBuy(stopLimitOrder);
+                }
+                else
+                {
+                    return MatchResult.notEnoughCredit();
+                }
             } else {
+                stopLimitOrder.updateFromRequest(updateOrderRq);
                 deactivatedSellOrders.remove(stopLimitOrder);
                 addToDeactivatedSell(stopLimitOrder);
             }
