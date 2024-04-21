@@ -319,6 +319,7 @@ public class StopLimitOrderTest {
 
 
     }
+
     @Test
     void broker_has_not_enough_credit()
     {
@@ -331,6 +332,7 @@ public class StopLimitOrderTest {
         verify(eventPublisher).publish(new OrderRejectedEvent(1,2,List.of(Message.BUYER_HAS_NOT_ENOUGH_CREDIT)));
 
     }
+
 
 
 
