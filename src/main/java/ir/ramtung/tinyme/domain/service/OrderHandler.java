@@ -68,7 +68,7 @@ public class OrderHandler {
                 eventPublisher.publish(new OrderUpdatedEvent(enterOrderRq.getRequestId(), enterOrderRq.getOrderId()));
 
             for (var activatedOrder : security.getActivatedOrders())
-            { // duplicated activated list not empty only can happen to new and updated stoplimit orders
+            {
                 eventPublisher.publish(new OrderActivatedEvent());
                 security.removeFromActivatedList(activatedOrder.getOrderId());
             }
@@ -147,7 +147,7 @@ public class OrderHandler {
             errors.add(Message.UNKNOWN_SHAREHOLDER_ID);
         if (enterOrderRq.getPeakSize() < 0 || enterOrderRq.getPeakSize() >= enterOrderRq.getQuantity())
             errors.add(Message.INVALID_PEAK_SIZE);
-        if(enterOrderRq.getStopLimit() != 0 && enterOrderRq.getPeakSize() == 0)
+        if(enterOrderRq.getStopLimit() != 0 && enterOrderRq.getPeakSize() != 0)
             errors.add(Message.STOP_LIMIT_ORDER_IS_ICEBERG);
         if(enterOrderRq.getStopLimit() != 0 && enterOrderRq.getMinimumExecutionQuantity() > 0)
             errors.add(Message.STOP_LIMIT_ORDER_HAS_MINIMUM_EXECUTION_QUANTITY);
