@@ -24,9 +24,11 @@ public class Order {
     protected LocalDateTime entryTime = LocalDateTime.now();
     @Builder.Default
     protected OrderStatus status = OrderStatus.NEW;
+    @Builder.Default
     protected int minimumExecutionQuantity = 0;
-    
-    public Order(long orderId, Security security, Side side, int quantity, int price, Broker broker, Shareholder shareholder, LocalDateTime entryTime, OrderStatus status , int minimumExecutionQuantity) {
+
+    public Order(long orderId, Security security, Side side, int quantity, int price, Broker broker,
+            Shareholder shareholder, LocalDateTime entryTime, OrderStatus status, int minimumExecutionQuantity) {
         this.orderId = orderId;
         this.security = security;
         this.side = side;
@@ -39,32 +41,54 @@ public class Order {
         this.minimumExecutionQuantity = minimumExecutionQuantity;
     }
 
-    public Order(long orderId, Security security, Side side, int quantity, int price, Broker broker, Shareholder shareholder, LocalDateTime entryTime, OrderStatus status) {
+    public Order(Order newOrder) {
+        orderId = newOrder.getOrderId();
+        security = newOrder.getSecurity();
+        side = newOrder.getSide();
+        quantity = newOrder.getQuantity();
+        price = newOrder.getPrice();
+        entryTime = newOrder.getEntryTime();
+        broker = newOrder.getBroker();
+        shareholder = newOrder.getShareholder();
+        status = newOrder.getStatus();
+        minimumExecutionQuantity = newOrder.getMinimumExecutionQuantity();
+    }
+
+    public Order(long orderId, Security security, Side side, int quantity, int price, Broker broker,
+            Shareholder shareholder, LocalDateTime entryTime, OrderStatus status) {
         this(orderId, security, side, quantity, price, broker, shareholder, entryTime, OrderStatus.NEW, 0);
     }
 
-    public Order(long orderId, Security security, Side side, int quantity, int price, Broker broker, Shareholder shareholder, LocalDateTime entryTime, int minimumExecutionQuantity) {
-        this(orderId, security, side, quantity, price, broker, shareholder, entryTime, OrderStatus.NEW, minimumExecutionQuantity);
+    public Order(long orderId, Security security, Side side, int quantity, int price, Broker broker,
+            Shareholder shareholder, LocalDateTime entryTime, int minimumExecutionQuantity) {
+        this(orderId, security, side, quantity, price, broker, shareholder, entryTime, OrderStatus.NEW,
+                minimumExecutionQuantity);
     }
 
-    public Order(long orderId, Security security, Side side, int quantity, int price, Broker broker, Shareholder shareholder, LocalDateTime entryTime) {
+    public Order(long orderId, Security security, Side side, int quantity, int price, Broker broker,
+            Shareholder shareholder, LocalDateTime entryTime) {
         this(orderId, security, side, quantity, price, broker, shareholder, entryTime, OrderStatus.NEW, 0);
     }
 
-    public Order(long orderId, Security security, Side side, int quantity, int price, Broker broker, Shareholder shareholder , int minimumExecutionQuantity) {
-        this(orderId, security, side, quantity, price, broker, shareholder, LocalDateTime.now(), minimumExecutionQuantity);
+    public Order(long orderId, Security security, Side side, int quantity, int price, Broker broker,
+            Shareholder shareholder, int minimumExecutionQuantity) {
+        this(orderId, security, side, quantity, price, broker, shareholder, LocalDateTime.now(),
+                minimumExecutionQuantity);
     }
 
-    public Order(long orderId, Security security, Side side, int quantity, int price, Broker broker, Shareholder shareholder) {
+    public Order(long orderId, Security security, Side side, int quantity, int price, Broker broker,
+            Shareholder shareholder) {
         this(orderId, security, side, quantity, price, broker, shareholder, LocalDateTime.now(), 0);
     }
 
     public Order snapshot() {
-        return new Order(orderId, security, side, quantity, price, broker, shareholder, entryTime, OrderStatus.SNAPSHOT,minimumExecutionQuantity);
+        return new Order(orderId, security, side, quantity, price, broker, shareholder, entryTime, OrderStatus.SNAPSHOT,
+                minimumExecutionQuantity);
     }
 
     public Order snapshotWithQuantity(int newQuantity) {
-        return new Order(orderId, security, side, newQuantity, price, broker, shareholder, entryTime, OrderStatus.SNAPSHOT,minimumExecutionQuantity);
+        return new Order(orderId, security, side, newQuantity, price, broker, shareholder, entryTime,
+                OrderStatus.SNAPSHOT, minimumExecutionQuantity);
     }
 
     public boolean matches(Order other) {
@@ -96,9 +120,10 @@ public class Order {
         status = OrderStatus.QUEUED;
     }
 
-    public void markAsNew(){
+    public void markAsNew() {
         status = OrderStatus.NEW;
     }
+
     public boolean isQuantityIncreased(int newQuantity) {
         return newQuantity > quantity;
     }
@@ -109,8 +134,10 @@ public class Order {
     }
 
     public long getValue() {
-        return (long)price * quantity;
+        return (long) price * quantity;
     }
 
-    public int getTotalQuantity() { return quantity; }
+    public int getTotalQuantity() {
+        return quantity;
+    }
 }

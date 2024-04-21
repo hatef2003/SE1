@@ -189,6 +189,4 @@ class SecurityTest {
         assertThat(result.trades()).hasSize(2);
         assertThat(result.remainder().getQuantity()).isZero();
     }
-
-
 }

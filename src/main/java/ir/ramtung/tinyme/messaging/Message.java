@@ -15,4 +15,7 @@ public class Message {
     public static final String PRICE_NOT_MULTIPLE_OF_TICK_SIZE = "Price is not a multiple of security tick size";
     public static final String SELLER_HAS_NOT_ENOUGH_POSITIONS = "Seller has not enough positions";
     public static final String TRADE_QUANTITY_LESS_THAN_MINIMUM = "Trade quantity is less than minimum execution quantity";
+    public static final String STOP_LIMIT_ORDER_IS_ICEBERG = "Stop limit order can't be Iceberg order";
+    public static final String STOP_LIMIT_ORDER_HAS_MINIMUM_EXECUTION_QUANTITY = "Stop limit orders can't have minimum execution quantity ";
+
 }
