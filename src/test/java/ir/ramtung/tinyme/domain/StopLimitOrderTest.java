@@ -272,6 +272,7 @@ public class StopLimitOrderTest {
     @Test
     void error_if_peak_size_is_not_zero()
     {
+        broker1.increaseCreditBy(100_000_000);
         EnterOrderRq stopLimitRequest1 = EnterOrderRq.createNewOrderRq(1, "ABC" , 1 , LocalDateTime.now() , BUY,50,200,1,shareholder.getShareholderId(),1,0,300);
         orderHandler.handleEnterOrder(stopLimitRequest1);
         verify(eventPublisher).publish((new OrderRejectedEvent(1,1,List.of(STOP_LIMIT_ORDER_IS_ICEBERG))));
@@ -280,10 +281,24 @@ public class StopLimitOrderTest {
     @Test
     void error_if_min_execution_is_not_zero()
     {
+        broker1.increaseCreditBy(100_000_000);
         EnterOrderRq stopLimitRequest1 = EnterOrderRq.createNewOrderRq(1, "ABC" , 1 , LocalDateTime.now() , BUY,50,200,1,shareholder.getShareholderId(),0,1,300);
         orderHandler.handleEnterOrder(stopLimitRequest1);
         verify(eventPublisher).publish((new OrderRejectedEvent(1,1,List.of(STOP_LIMIT_ORDER_HAS_MINIMUM_EXECUTION_QUANTITY))));
 
+
+    }
+    @Test
+    void delete_deactivated_order()
+    {
+        broker1.increaseCreditBy(100_000_000);
+        EnterOrderRq stopLimitRequest1 = EnterOrderRq.createNewOrderRq(1, "ABC" , 1 , LocalDateTime.now() , BUY,50,200,1,shareholder.getShareholderId(),0,0,300);
+        orderHandler.handleEnterOrder(stopLimitRequest1);
+        //    public DeleteOrderRq(long requestId, String securityIsin, Side side, long orderId) {
+        DeleteOrderRq delete = new DeleteOrderRq(1 , "ABC",Side.BUY , 1);
+        orderHandler.handleDeleteOrder(delete);
+        verify(eventPublisher).publish(new OrderDeletedEvent(1,1));
+        assertThat(security.getDeactivatedOrders().size()).isEqualTo(0);
     }
 
 
