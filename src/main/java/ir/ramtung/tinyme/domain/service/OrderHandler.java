@@ -147,7 +147,7 @@ public class OrderHandler {
             if (!matchResult.trades().isEmpty()|| enterOrderRq.getRequestType() == OrderEntryType.UPDATE_ORDER) {
                 eventPublisher.publish(new OrderExecutedEvent(enterOrderRq.getRequestId(), enterOrderRq.getOrderId(),
                         matchResult.trades().stream().map(TradeDTO::new).collect(Collectors.toList())));
-                handleActivatedOrderSortedByTime(security, enterOrderRq.getRequestId());
+                handleActivatedOrderSortedByStopPrice(security, enterOrderRq.getOrderId());
             }
         } catch (InvalidRequestException ex) {
             eventPublisher.publish(
@@ -168,7 +168,6 @@ public class OrderHandler {
     }
 
     private void validateEnterOrderRq(EnterOrderRq enterOrderRq) throws InvalidRequestException {
-        // TODO check Update and Creation of new type off Order (StopLimitOrder)
         List<String> errors = new LinkedList<>();
         if (enterOrderRq.getOrderId() <= 0)
             errors.add(Message.INVALID_ORDER_ID);

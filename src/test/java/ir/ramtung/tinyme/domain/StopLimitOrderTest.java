@@ -165,7 +165,74 @@ public class StopLimitOrderTest {
         orderHandler.handleEnterOrder(updateStopOrderRq);
         verify(eventPublisher).publish(new OrderActivatedEvent(4, 1));
     }
-    
+    @Test
+    void buy_stop_limit_active_at_entry_time_and_make_trades()
+    {
+
+        broker1.increaseCreditBy(100_000_000);
+        EnterOrderRq sellOrder = EnterOrderRq.createNewOrderRq(2, "ABC" , 2 , LocalDateTime.now() , SELL,100,100,1,shareholder.getShareholderId(),0,0,0);
+        EnterOrderRq buyOrder = EnterOrderRq.createNewOrderRq(3, "ABC" , 3 , LocalDateTime.now() , BUY,100,120,1,shareholder.getShareholderId(),0,0,0);
+        orderHandler.handleEnterOrder(sellOrder);
+        orderHandler.handleEnterOrder(buyOrder);
+        EnterOrderRq matchingSellOrder = EnterOrderRq.createNewOrderRq(4, "ABC", 5, LocalDateTime.now(), SELL, 50, 50, 1, shareholder.getShareholderId(),0);
+        orderHandler.handleEnterOrder(matchingSellOrder);
+        EnterOrderRq stopLimitRequest = EnterOrderRq.createNewOrderRq(1, "ABC" , 1 , LocalDateTime.now() , BUY,100,50,1,shareholder.getShareholderId(),0,0,100);
+        orderHandler.handleEnterOrder(stopLimitRequest);
+        Order matching = new Order (5,security,Side.SELL,50,50,broker1,shareholder);
+        Order comingOrder = new Order (1,security,Side.BUY,100,50,broker1,shareholder);
+        Trade trade = new Trade(security, 50, 50, matching,comingOrder);
+        verify(eventPublisher).publish(new OrderExecutedEvent(1, 1,List.of(new TradeDTO(trade))));
+    }
+    void add_one_sell_adn_buy()
+    {
+        broker1.increaseCreditBy(100_000_000);
+        EnterOrderRq sellOrder = EnterOrderRq.createNewOrderRq(2, "ABC" , 2 , LocalDateTime.now() , SELL,100,50,1,shareholder.getShareholderId(),0,0,0);
+        EnterOrderRq buyOrder = EnterOrderRq.createNewOrderRq(3, "ABC" , 3 , LocalDateTime.now() , BUY,100,50,1,shareholder.getShareholderId(),0,0,0);
+        orderHandler.handleEnterOrder(sellOrder);
+        orderHandler.handleEnterOrder(buyOrder);
+    }
+    @Test
+    void sell_stop_limit_active_at_entry_time_and_make_trades()
+    {
+        broker1.increaseCreditBy(100_000_000);
+        EnterOrderRq sellOrder = EnterOrderRq.createNewOrderRq(2, "ABC" , 2 , LocalDateTime.now() , SELL,100,50,1,shareholder.getShareholderId(),0,0,0);
+        EnterOrderRq buyOrder = EnterOrderRq.createNewOrderRq(3, "ABC" , 3 , LocalDateTime.now() , BUY,100,50,1,shareholder.getShareholderId(),0,0,0);
+        orderHandler.handleEnterOrder(sellOrder);
+        orderHandler.handleEnterOrder(buyOrder);
+        EnterOrderRq matchingBuyOrder = EnterOrderRq.createNewOrderRq(4, "ABC", 5, LocalDateTime.now(), BUY, 50, 50, 1, shareholder.getShareholderId(),0);
+        orderHandler.handleEnterOrder(matchingBuyOrder);
+        EnterOrderRq stopLimitRequest = EnterOrderRq.createNewOrderRq(1, "ABC" , 1 , LocalDateTime.now() , SELL,100,50,1,shareholder.getShareholderId(),0,0,70);
+        orderHandler.handleEnterOrder(stopLimitRequest);
+        Order matching = new Order (5,security,Side.BUY,50,50,broker1,shareholder);
+        Order comingOrder = new Order (1,security, SELL,100,50,broker1,shareholder);
+        Trade trade = new Trade(security, 50, 50, matching,comingOrder);
+        verify(eventPublisher).publish(new OrderExecutedEvent(1, 1,List.of(new TradeDTO(trade))));
+    }
+    @Test
+    void two_buy_order_activate_together()
+    {
+        broker1.increaseCreditBy(100_000_000);
+        EnterOrderRq stopLimitRequest2 = EnterOrderRq.createNewOrderRq(2, "ABC" , 2 , LocalDateTime.now() , BUY,100,200,1,shareholder.getShareholderId(),0,0,200);
+        EnterOrderRq stopLimitRequest1 = EnterOrderRq.createNewOrderRq(1, "ABC" , 1 , LocalDateTime.now() , BUY,100,200,1,shareholder.getShareholderId(),0,0,100);
+
+        orderHandler.handleEnterOrder(stopLimitRequest2);
+        orderHandler.handleEnterOrder(stopLimitRequest1);
+
+        EnterOrderRq sellOrder = EnterOrderRq.createNewOrderRq(3, "ABC" , 3 , LocalDateTime.now() , SELL,300,200,1,shareholder.getShareholderId(),0,0,0);
+        EnterOrderRq buyOrder = EnterOrderRq.createNewOrderRq(4, "ABC" , 4 , LocalDateTime.now() , BUY,100,200,1,shareholder.getShareholderId(),0,0,0);
+        orderHandler.handleEnterOrder(sellOrder);
+        orderHandler.handleEnterOrder(buyOrder);
+        verify(eventPublisher).publish(new OrderActivatedEvent(4, 1));
+        Order matching = new Order (3,security, SELL,200,200,broker1,shareholder);
+        Order comingOrder = new Order (1,security, BUY,100,200,broker1,shareholder);
+        Trade trade = new Trade(security, 200, 100, matching,comingOrder);
+        verify(eventPublisher).publish(new OrderExecutedEvent(4, 1,List.of(new TradeDTO(trade))));
+        verify(eventPublisher).publish(new OrderActivatedEvent(4, 2));
+        Order matching2 = new Order (3,security, SELL,100,200,broker1,shareholder);
+        Order comingOrder2 = new Order (2,security, BUY,100,200,broker1,shareholder);
+        Trade trade2 = new Trade(security, 200, 100, matching2,comingOrder2);
+        verify(eventPublisher).publish(new OrderExecutedEvent(4, 2,List.of(new TradeDTO(trade2))));
+    }
 
 
 }
