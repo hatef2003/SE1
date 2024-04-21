@@ -18,5 +18,4 @@ public class Message {
     public static final String STOP_LIMIT_ORDER_IS_ICEBERG = "Stop limit order can't be Iceberg order";
     public static final String STOP_LIMIT_ORDER_HAS_MINIMUM_EXECUTION_QUANTITY = "Stop limit orders can't have minimum execution quantity ";
 
-    public static final String CANNOT_UPDATE_STOP_LIMIT_FOR_ACTIVE_ORDERS = "Cannot update active stop limit orders";
 }

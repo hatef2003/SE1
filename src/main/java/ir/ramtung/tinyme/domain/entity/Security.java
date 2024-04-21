@@ -8,7 +8,11 @@ import ir.ramtung.tinyme.messaging.Message;
 import lombok.Builder;
 import lombok.Getter;
 
+import static ir.ramtung.tinyme.domain.entity.Side.BUY;
+
 import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.LinkedList;
 import java.util.List;
 
 @Getter
@@ -24,7 +28,9 @@ public class Security {
     @Builder.Default
     ArrayList<StopLimitOrder> deactivatedOrders = new ArrayList<StopLimitOrder>();
     @Builder.Default
-    ArrayList<StopLimitOrder> activatedOrders = new ArrayList<StopLimitOrder>();
+    ArrayList<StopLimitOrder> deactivatedBuyOrders = new ArrayList<StopLimitOrder>();
+    @Builder.Default
+    ArrayList<StopLimitOrder> deactivatedSellOrders = new ArrayList<StopLimitOrder>();
     @Builder.Default
     private int lastTradePrice = -1;
 
@@ -34,27 +40,35 @@ public class Security {
                         orderBook.totalSellQuantityByShareholder(shareholder) + enterOrderRq.getQuantity()))
             return MatchResult.notEnoughPositions();
         Order order;
-
         if (enterOrderRq.getPeakSize() == 0 && enterOrderRq.getStopLimit() == 0)
             order = new Order(enterOrderRq.getOrderId(), this, enterOrderRq.getSide(),
                     enterOrderRq.getQuantity(), enterOrderRq.getPrice(), broker, shareholder,
                     enterOrderRq.getEntryTime(), enterOrderRq.getMinimumExecutionQuantity());
         else if (enterOrderRq.getStopLimit() != 0 && enterOrderRq.getPeakSize() == 0
                 && enterOrderRq.getMinimumExecutionQuantity() == 0) {
+            if (enterOrderRq.getSide() == Side.BUY) {
+                if (!broker.hasEnoughCredit(enterOrderRq.getQuantity() * enterOrderRq.getPrice())) {
+                    return MatchResult.notEnoughCredit();
+                } else {
+                    broker.decreaseCreditBy(enterOrderRq.getQuantity() * enterOrderRq.getPrice());
+                }
+            }
             StopLimitOrder newOrder = new StopLimitOrder(enterOrderRq.getOrderId(), this, enterOrderRq.getSide(),
                     enterOrderRq.getQuantity(), enterOrderRq.getPrice(), broker, shareholder,
                     enterOrderRq.getEntryTime(), OrderStatus.NEW, enterOrderRq.getStopLimit());
             if (newOrder.isActive(lastTradePrice)) {
-                activatedOrders.add(newOrder);
-                order = newOrder;
-            }
-            else {
+                newOrder.restoreBrokerCredit();
+                order = new Order(newOrder);
+            } else {
                 deactivatedOrders.add(newOrder);
-                return MatchResult.executed(newOrder, List.of());
+                if (enterOrderRq.getSide() == Side.BUY) {
+                    addToDeactivatedBuy(newOrder);
+                } else {
+                    addToDeactivatedSell(newOrder);
+                }
+                return MatchResult.executed(newOrder, new LinkedList<>());
             }
-        }
-        // suppose that the input is valid
-        else
+        } else
             order = new IcebergOrder(enterOrderRq.getOrderId(), this, enterOrderRq.getSide(),
                     enterOrderRq.getQuantity(), enterOrderRq.getPrice(), broker, shareholder,
                     enterOrderRq.getEntryTime(), enterOrderRq.getPeakSize(),
@@ -67,23 +81,18 @@ public class Security {
 
         return matchResult;
     }
-    public void setLastTradePrice(int price)
-    {
+
+    public void setLastTradePrice(int price) {
         lastTradePrice = price;
     }
+
     public void deleteOrder(DeleteOrderRq deleteOrderRq) throws InvalidRequestException {
         Order order = orderBook.findByOrderId(deleteOrderRq.getSide(), deleteOrderRq.getOrderId());
-        StopLimitOrder stopLimitOrder = findStopLimitOrderById(deleteOrderRq.getOrderId());
-        if (order == null && stopLimitOrder == null)
+        if (order == null)
             throw new InvalidRequestException(Message.ORDER_ID_NOT_FOUND);
-
-        if (order != null) {
-            if (order.getSide() == Side.BUY)
-                order.getBroker().increaseCreditBy(order.getValue());
-            orderBook.removeByOrderId(deleteOrderRq.getSide(), deleteOrderRq.getOrderId());
-        }
-        if (stopLimitOrder != null)
-            removeFromDeactivatedList(stopLimitOrder.getOrderId());
+        if (order.getSide() == Side.BUY)
+            order.getBroker().increaseCreditBy(order.getValue());
+        orderBook.removeByOrderId(deleteOrderRq.getSide(), deleteOrderRq.getOrderId());
     }
 
     public MatchResult updateOrder(EnterOrderRq updateOrderRq, Matcher matcher) throws InvalidRequestException {
@@ -96,8 +105,6 @@ public class Security {
                 throw new InvalidRequestException(Message.INVALID_PEAK_SIZE);
             if (!(order instanceof IcebergOrder) && updateOrderRq.getPeakSize() != 0)
                 throw new InvalidRequestException(Message.CANNOT_SPECIFY_PEAK_SIZE_FOR_A_NON_ICEBERG_ORDER);
-            if (updateOrderRq.getStopLimit() != 0)
-                throw new InvalidRequestException(Message.CANNOT_UPDATE_STOP_LIMIT_FOR_ACTIVE_ORDERS);
 
             if (updateOrderRq.getSide() == Side.SELL &&
                     !order.getShareholder().hasEnoughPositionsOn(this,
@@ -131,20 +138,30 @@ public class Security {
                 }
             }
             return matchResult;
-        }
-        else {
+        } else {
             stopLimitOrder.updateFromRequest(updateOrderRq);
-            if (stopLimitOrder.isActive(lastTradePrice)) {
-                removeFromDeactivatedList(stopLimitOrder.getOrderId());
-                activatedOrders.add(stopLimitOrder);
-                MatchResult matchResult = matcher.execute(stopLimitOrder);
-                if (matchResult.trades().size() != 0) {
-                    lastTradePrice = matchResult.trades().getLast().getPrice();
-                }
-                return matchResult;
+            if (stopLimitOrder.side == BUY)
+            {
+                deactivatedBuyOrders.remove(stopLimitOrder);
+                addToDeactivatedBuy(stopLimitOrder);
             }
             else
-                return MatchResult.executed(stopLimitOrder, List.of());
+            {
+                deactivatedSellOrders.remove(stopLimitOrder);
+                addToDeactivatedSell(stopLimitOrder);
+            }
+            // if (stopLimitOrder.isActive(lastTradePrice)) {
+            //     removeFromDeactivatedList(stopLimitOrder.getOrderId());
+            //     Order updatedOrder = new Order(stopLimitOrder);
+            //     stopLimitOrder.restoreBrokerCredit();
+            //     MatchResult result = matcher.execute(updatedOrder);
+            //     if (!result.trades().isEmpty()) {
+            //         lastTradePrice = result.trades().get(result.trades().size() - 1).getPrice();
+            //     }
+
+            //     return result;
+            // }
+            return MatchResult.executed(order, new LinkedList<>());
         }
     }
 
@@ -156,14 +173,36 @@ public class Security {
         }
         return null;
     }
-    public void removeFromDeactivatedList(long id)
-    {
-        StopLimitOrder order = findStopLimitOrderById(id);
-        deactivatedOrders.remove(order);
+
+    private void addToDeactivatedBuy(StopLimitOrder newOrder) {
+        int i = 0;
+        for (; i < deactivatedBuyOrders.size(); i++) {
+            if (deactivatedBuyOrders.get(i).getStopLimit() > newOrder.getStopLimit()) {
+                break;
+            }
+        }
+        deactivatedBuyOrders.add(i, newOrder);
     }
 
-    public void removeFromActivatedList(long id)
-    {
-        activatedOrders.removeIf(order -> order.getOrderId() == id);
+    private void addToDeactivatedSell(StopLimitOrder newOrder) {
+        int i = 0;
+        for (; i < deactivatedSellOrders.size(); i++) {
+            if (deactivatedSellOrders.get(i).getStopLimit() < newOrder.getStopLimit()) {
+                break;
+            }
+        }
+        deactivatedSellOrders.add(i, newOrder);
     }
+
+    public void removeFromDeactivatedList(long id) {
+        StopLimitOrder order = findStopLimitOrderById(id);
+
+        deactivatedOrders.remove(order);
+        if (order.getSide() == Side.BUY) {
+            deactivatedBuyOrders.remove(order);
+        } else {
+            deactivatedSellOrders.remove(order);
+        }
+    }
+
 }
