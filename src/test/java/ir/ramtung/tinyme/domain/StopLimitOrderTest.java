@@ -5,7 +5,6 @@ import ir.ramtung.tinyme.domain.entity.*;
 import ir.ramtung.tinyme.domain.service.Matcher;
 import ir.ramtung.tinyme.domain.service.OrderHandler;
 import ir.ramtung.tinyme.messaging.EventPublisher;
-import ir.ramtung.tinyme.messaging.event.OrderAcceptedEvent;
 import ir.ramtung.tinyme.messaging.exception.InvalidRequestException;
 import ir.ramtung.tinyme.messaging.request.DeleteOrderRq;
 import ir.ramtung.tinyme.messaging.request.EnterOrderRq;
@@ -320,6 +319,20 @@ public class StopLimitOrderTest {
 
 
     }
+
+    @Test
+    void broker_has_not_enough_credit()
+    {
+        broker1.increaseCreditBy(100*300);
+        EnterOrderRq stopLimitRequest2 = EnterOrderRq.createNewOrderRq(2, "ABC" , 2 , LocalDateTime.now() , BUY,100,300,1,shareholder.getShareholderId(),0,0,200);
+        orderHandler.handleEnterOrder(stopLimitRequest2);
+        verify(eventPublisher).publish(new OrderAcceptedEvent(2,2));
+        EnterOrderRq update = EnterOrderRq.createUpdateOrderRq(1,"ABC", 2, LocalDateTime.now(), BUY, 100, 350,1, shareholder.getShareholderId(), 0,200);
+        orderHandler.handleEnterOrder(update);
+        verify(eventPublisher).publish(new OrderRejectedEvent(1,2,List.of(Message.BUYER_HAS_NOT_ENOUGH_CREDIT)));
+
+    }
+
 
 
 
