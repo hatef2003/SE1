@@ -24,6 +24,8 @@ import java.util.*;
 
 import static ir.ramtung.tinyme.domain.entity.Side.BUY;
 import static ir.ramtung.tinyme.domain.entity.Side.SELL;
+import static ir.ramtung.tinyme.messaging.Message.STOP_LIMIT_ORDER_HAS_MINIMUM_EXECUTION_QUANTITY;
+import static ir.ramtung.tinyme.messaging.Message.STOP_LIMIT_ORDER_IS_ICEBERG;
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.Mockito.verify;
 
@@ -183,14 +185,7 @@ public class StopLimitOrderTest {
         Trade trade = new Trade(security, 50, 50, matching,comingOrder);
         verify(eventPublisher).publish(new OrderExecutedEvent(1, 1,List.of(new TradeDTO(trade))));
     }
-    void add_one_sell_adn_buy()
-    {
-        broker1.increaseCreditBy(100_000_000);
-        EnterOrderRq sellOrder = EnterOrderRq.createNewOrderRq(2, "ABC" , 2 , LocalDateTime.now() , SELL,100,50,1,shareholder.getShareholderId(),0,0,0);
-        EnterOrderRq buyOrder = EnterOrderRq.createNewOrderRq(3, "ABC" , 3 , LocalDateTime.now() , BUY,100,50,1,shareholder.getShareholderId(),0,0,0);
-        orderHandler.handleEnterOrder(sellOrder);
-        orderHandler.handleEnterOrder(buyOrder);
-    }
+
     @Test
     void sell_stop_limit_active_at_entry_time_and_make_trades()
     {
@@ -233,6 +228,67 @@ public class StopLimitOrderTest {
         Trade trade2 = new Trade(security, 200, 100, matching2,comingOrder2);
         verify(eventPublisher).publish(new OrderExecutedEvent(4, 2,List.of(new TradeDTO(trade2))));
     }
+    @Test
+    void two_sell_order_activate_together()
+    {
+        broker1.increaseCreditBy(100_000_000);
+        EnterOrderRq stopLimitRequest2 = EnterOrderRq.createNewOrderRq(2, "ABC" , 2 , LocalDateTime.now() , SELL,50,200,1,shareholder.getShareholderId(),0,0,200);
+        EnterOrderRq stopLimitRequest1 = EnterOrderRq.createNewOrderRq(1, "ABC" , 1 , LocalDateTime.now() , SELL,50,200,1,shareholder.getShareholderId(),0,0,300);
+
+        orderHandler.handleEnterOrder(stopLimitRequest2);
+        orderHandler.handleEnterOrder(stopLimitRequest1);
+
+        EnterOrderRq sellOrder = EnterOrderRq.createNewOrderRq(3, "ABC" , 3 , LocalDateTime.now() , SELL,100,200,1,shareholder.getShareholderId(),0,0,0);
+        EnterOrderRq buyOrder = EnterOrderRq.createNewOrderRq(4, "ABC" , 4 , LocalDateTime.now() , BUY,150,200,1,shareholder.getShareholderId(),0,0,0);
+        orderHandler.handleEnterOrder(sellOrder);
+        orderHandler.handleEnterOrder(buyOrder);
+        verify(eventPublisher).publish(new OrderActivatedEvent(4, 1));
+        Order matching = new Order (4,security, BUY,50,200,broker1,shareholder);
+        Order comingOrder = new Order (1,security, SELL,100,200,broker1,shareholder);
+        Trade trade = new Trade(security, 200, 50, matching,comingOrder);
+        verify(eventPublisher).publish(new OrderExecutedEvent(4, 1,List.of(new TradeDTO(trade))));
+        verify(eventPublisher).publish(new OrderActivatedEvent(4, 2));
+
+    }
+    @Test
+    void buy_activate_on_update_and_match()
+    {
+        broker1.increaseCreditBy(100_000_000);
+        EnterOrderRq stopLimitRequest1 = EnterOrderRq.createNewOrderRq(1, "ABC" , 1 , LocalDateTime.now() , BUY,50,200,1,shareholder.getShareholderId(),0,0,300);
+        orderHandler.handleEnterOrder(stopLimitRequest1);
+        EnterOrderRq sellOrder = EnterOrderRq.createNewOrderRq(3, "ABC" , 3 , LocalDateTime.now() , SELL,150,200,1,shareholder.getShareholderId(),0,0,0);
+        EnterOrderRq buyOrder = EnterOrderRq.createNewOrderRq(4, "ABC" , 4 , LocalDateTime.now() , BUY,100,200,1,shareholder.getShareholderId(),0,0,0);
+        orderHandler.handleEnterOrder(sellOrder);
+        orderHandler.handleEnterOrder(buyOrder);
+        assertThat(security.getLastTradePrice()).isEqualTo(200);
+        EnterOrderRq update = EnterOrderRq.createUpdateOrderRq(5, "ABC",1,LocalDateTime.now(),BUY,40,200,1,shareholder.getShareholderId(),0,100 );
+        orderHandler.handleEnterOrder(update);
+        verify(eventPublisher).publish(new OrderActivatedEvent(5, 1));
+        Order matching = new Order (3,security, SELL,50,200,broker1,shareholder);
+        Order comingOrder = new Order (1,security,BUY,40,200,broker1,shareholder);
+        Trade trade = new Trade(security, 200, 40, matching,comingOrder);
+        verify(eventPublisher).publish(new OrderExecutedEvent(5, 1,List.of(new TradeDTO(trade))));
+    }
+    @Test
+    void error_if_peak_size_is_not_zero()
+    {
+        EnterOrderRq stopLimitRequest1 = EnterOrderRq.createNewOrderRq(1, "ABC" , 1 , LocalDateTime.now() , BUY,50,200,1,shareholder.getShareholderId(),1,0,300);
+        orderHandler.handleEnterOrder(stopLimitRequest1);
+        verify(eventPublisher).publish((new OrderRejectedEvent(1,1,List.of(STOP_LIMIT_ORDER_IS_ICEBERG))));
+        
+    }
+    @Test
+    void error_if_min_execution_is_not_zero()
+    {
+        EnterOrderRq stopLimitRequest1 = EnterOrderRq.createNewOrderRq(1, "ABC" , 1 , LocalDateTime.now() , BUY,50,200,1,shareholder.getShareholderId(),0,1,300);
+        orderHandler.handleEnterOrder(stopLimitRequest1);
+        verify(eventPublisher).publish((new OrderRejectedEvent(1,1,List.of(STOP_LIMIT_ORDER_HAS_MINIMUM_EXECUTION_QUANTITY))));
+
+    }
+
+
+
+
 
 
 }
