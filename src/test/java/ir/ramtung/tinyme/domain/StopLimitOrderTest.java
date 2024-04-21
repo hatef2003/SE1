@@ -300,6 +300,26 @@ public class StopLimitOrderTest {
         verify(eventPublisher).publish(new OrderDeletedEvent(1,1));
         assertThat(security.getDeactivatedOrders().size()).isEqualTo(0);
     }
+    @Test
+    void an_activated_order_make_another_one_active()
+    {
+        broker1.increaseCreditBy(100_000_000);
+        EnterOrderRq stopLimitRequest2 = EnterOrderRq.createNewOrderRq(2, "ABC" , 2 , LocalDateTime.now() , BUY,100,300,1,shareholder.getShareholderId(),0,0,200);
+        EnterOrderRq stopLimitRequest1 = EnterOrderRq.createNewOrderRq(1, "ABC" , 1 , LocalDateTime.now() , BUY,100,250,1,shareholder.getShareholderId(),0,0,100);
+
+        orderHandler.handleEnterOrder(stopLimitRequest2);
+        orderHandler.handleEnterOrder(stopLimitRequest1);
+        EnterOrderRq sellOrder2 = EnterOrderRq.createNewOrderRq(5, "ABC" , 5 , LocalDateTime.now() , SELL,100,250,1,shareholder.getShareholderId(),0,0,0);
+        orderHandler.handleEnterOrder(sellOrder2);
+        EnterOrderRq sellOrder = EnterOrderRq.createNewOrderRq(3, "ABC" , 3 , LocalDateTime.now() , SELL,100,100,1,shareholder.getShareholderId(),0,0,0);
+        EnterOrderRq buyOrder = EnterOrderRq.createNewOrderRq(4, "ABC" , 4 , LocalDateTime.now() , BUY,100,100,1,shareholder.getShareholderId(),0,0,0);
+        orderHandler.handleEnterOrder(buyOrder);
+        orderHandler.handleEnterOrder(sellOrder);
+        verify(eventPublisher).publish(new OrderActivatedEvent(3,1));
+        verify(eventPublisher).publish(new OrderActivatedEvent(3,2));
+
+
+    }
 
 
 

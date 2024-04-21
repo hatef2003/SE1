@@ -95,11 +95,8 @@ public class Security {
             if (order.getSide() == Side.BUY)
                 order.getBroker().increaseCreditBy(order.getValue());
             orderBook.removeByOrderId(deleteOrderRq.getSide(), deleteOrderRq.getOrderId());
-        }
-        else 
-        {
-            if(stopLimitOrder.getSide()==Side.BUY)
-            {
+        } else {
+            if (stopLimitOrder.getSide() == Side.BUY) {
                 stopLimitOrder.restoreBrokerCredit();
             }
             removeFromDeactivatedList(stopLimitOrder.getOrderId());
@@ -113,8 +110,7 @@ public class Security {
         if (order == null && stopLimitOrder == null)
             throw new InvalidRequestException(Message.ORDER_ID_NOT_FOUND);
         if (order != null) {
-            if (updateOrderRq.getStopLimit() !=0)
-            {
+            if (updateOrderRq.getStopLimit() != 0) {
                 throw new InvalidRequestException(Message.ACTIVATED_ORDER_CANT_HAS_STOP_LIMIT);
             }
             if ((order instanceof IcebergOrder) && updateOrderRq.getPeakSize() == 0)
@@ -198,12 +194,13 @@ public class Security {
 
     public void removeFromDeactivatedList(long id) {
         StopLimitOrder order = findStopLimitOrderById(id);
-
-        deactivatedOrders.remove(order);
-        if (order.getSide() == Side.BUY) {
-            deactivatedBuyOrders.remove(order);
-        } else {
-            deactivatedSellOrders.remove(order);
+        if (order != null) {
+            deactivatedOrders.remove(order);
+            if (order.getSide() == Side.BUY) {
+                deactivatedBuyOrders.remove(order);
+            } else {
+                deactivatedSellOrders.remove(order);
+            }
         }
     }
 

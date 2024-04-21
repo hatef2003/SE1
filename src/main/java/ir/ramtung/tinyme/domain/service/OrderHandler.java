@@ -84,7 +84,9 @@ public class OrderHandler {
         {
             security.removeFromDeactivatedList(order.getOrderId());
         }
-        for (StopLimitOrder stopLimitOrder : activatedList) {
+        int size = activatedList.size();
+        for (int i = 0 ; i <size; i ++) {
+            StopLimitOrder stopLimitOrder = activatedList.get(i);
             stopLimitOrder.restoreBrokerCredit();
             Order newOrder = new Order(stopLimitOrder);
             MatchResult result = matcher.execute(newOrder);
@@ -97,14 +99,17 @@ public class OrderHandler {
                 for (var deactivatedOrder : security.getDeactivatedBuyOrders()) {
                     if (deactivatedOrder.isActive(lastTradePrice)) {
                         activatedList.add(deactivatedOrder);
-                        security.removeFromDeactivatedList(deactivatedOrder.getOrderId());
+                        size++;
                     }
                 }
                 for (var deactivatedOrder : security.getDeactivatedSellOrders()) {
                     if (deactivatedOrder.isActive(lastTradePrice)) {
                         activatedList.add(deactivatedOrder);
-                        security.removeFromDeactivatedList(deactivatedOrder.getOrderId());
                     }
+                }
+                for (var active : activatedList)
+                {
+                    security.removeFromDeactivatedList(active.getOrderId());
                 }
             }
 
