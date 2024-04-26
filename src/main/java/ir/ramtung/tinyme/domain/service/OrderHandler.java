@@ -36,17 +36,20 @@ public class OrderHandler {
         this.eventPublisher = eventPublisher;
         this.matcher = matcher;
     }
-    private void handleActivatedOrderSortedByStopPrice(Security security, long request_id) {
+    private ArrayList<StopLimitOrder> findActivatedStopLimitOrders(Security security)
+    {
         ArrayList<StopLimitOrder> activatedList = new ArrayList<>();
         for (StopLimitOrder order : Stream.concat(security.getDeactivatedBuyOrders().stream(),
-                                    security.getDeactivatedSellOrders().stream()).toList())
+                security.getDeactivatedSellOrders().stream()).toList())
             if (order.isActive(security.getLastTradePrice())) {
                 activatedList.add(order);
                 security.removeFromDeactivatedList(order.getOrderId());
             }
-
-        int size = activatedList.size();
-        for (int i = 0 ; i < size; i++) {
+        return activatedList;
+    }
+    private void activateStopLimitOrders(Security security, long request_id) {
+        ArrayList<StopLimitOrder> activatedList = findActivatedStopLimitOrders(security);
+        for (int i = 0 ; i < activatedList.size(); i++) {
             StopLimitOrder stopLimitOrder = activatedList.get(i);
             stopLimitOrder.restoreBrokerCredit();
             Order newOrder = new Order(stopLimitOrder);
@@ -57,16 +60,8 @@ public class OrderHandler {
                         result.trades().stream().map(TradeDTO::new).collect(Collectors.toList())));
                 int lastTradePrice = result.trades().get(result.trades().size() - 1).getPrice();
                 newOrder.getSecurity().setLastTradePrice(lastTradePrice);
-                for (var deactivatedOrder : Stream.concat(security.getDeactivatedBuyOrders().stream(),
-                                            security.getDeactivatedSellOrders().stream()).toList()) {
-                    if (deactivatedOrder.isActive(lastTradePrice)) {
-                        activatedList.add(deactivatedOrder);
-                        security.removeFromDeactivatedList(deactivatedOrder.getOrderId());
-                        size++;
-                    }
-                }
+                activatedList.addAll(findActivatedStopLimitOrders(security));
             }
-
         }
     }
     public void handleEnterOrder(EnterOrderRq enterOrderRq) {
@@ -102,10 +97,10 @@ public class OrderHandler {
                 eventPublisher.publish(new OrderAcceptedEvent(enterOrderRq.getRequestId(), enterOrderRq.getOrderId()));
             else
                 eventPublisher.publish(new OrderUpdatedEvent(enterOrderRq.getRequestId(), enterOrderRq.getOrderId()));
-            if (!matchResult.trades().isEmpty()|| enterOrderRq.getRequestType() == OrderEntryType.UPDATE_ORDER) {
+            if (!matchResult.trades().isEmpty() || enterOrderRq.getRequestType() == OrderEntryType.UPDATE_ORDER) {
                 if (!matchResult.trades().isEmpty())
                     eventPublisher.publish(new OrderExecutedEvent(enterOrderRq.getRequestId(), enterOrderRq.getOrderId(), matchResult.trades().stream().map(TradeDTO::new).collect(Collectors.toList())));
-                handleActivatedOrderSortedByStopPrice(security, enterOrderRq.getRequestId());
+                activateStopLimitOrders(security, enterOrderRq.getRequestId());
             }
         } catch (InvalidRequestException ex) {
             eventPublisher.publish(

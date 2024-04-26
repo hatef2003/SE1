@@ -17,6 +17,6 @@ public class Message {
     public static final String TRADE_QUANTITY_LESS_THAN_MINIMUM = "Trade quantity is less than minimum execution quantity";
     public static final String STOP_LIMIT_ORDER_IS_ICEBERG = "Stop limit order can't be Iceberg order";
     public static final String STOP_LIMIT_ORDER_HAS_MINIMUM_EXECUTION_QUANTITY = "Stop limit orders can't have minimum execution quantity ";
-    public static final String ACTIVATED_ORDER_CANT_HAS_STOP_LIMIT = "Simple order cant has stop limit";
+    public static final String ACTIVE_ORDER_CANT_HAVE_STOP_LIMIT = "Active order cant have stop limit";
 
 }
