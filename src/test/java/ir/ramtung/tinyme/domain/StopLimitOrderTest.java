@@ -74,8 +74,6 @@ public class StopLimitOrderTest {
     private Security security;
     private Shareholder shareholder;
     private Broker broker1;
-    private Broker broker2;
-    private Broker broker3;
     @BeforeEach
     void setup()
     {
@@ -91,14 +89,10 @@ public class StopLimitOrderTest {
         shareholderRepository.addShareholder(shareholder);
 
         broker1 = Broker.builder().brokerId(1).build();
-        broker2 = Broker.builder().brokerId(2).build();
-        broker3 = Broker.builder().brokerId(2).build();
         brokerRepository.addBroker(broker1);
-        brokerRepository.addBroker(broker2);
-        brokerRepository.addBroker(broker3);
     }
     @Test
-    void new_buy_stop_limit_order_add()
+    void new_buy_stop_limit_order_created_correctly()
     {
         broker1.increaseCreditBy(1000 * 50);
         EnterOrderRq stopLimitRequest = EnterOrderRq.createNewOrderRq(1, "ABC" , 1 , LocalDateTime.now() , BUY,100,50,1,shareholder.getShareholderId(),0,0,100);
@@ -110,7 +104,7 @@ public class StopLimitOrderTest {
 
     }
     @Test
-    void check_priority_buy()
+    void buy_priority_is_correct()
     {
         broker1.increaseCreditBy(1000 * 50);
         EnterOrderRq stopLimitRequest1 = EnterOrderRq.createNewOrderRq(1, "ABC" , 1 , LocalDateTime.now() , BUY,100,50,1,shareholder.getShareholderId(),0,0,100);
@@ -124,7 +118,7 @@ public class StopLimitOrderTest {
 
     }
     @Test
-    void check_priority_sell()
+    void sell_priority_is_correct()
     {
         broker1.increaseCreditBy(1000 * 50);
         EnterOrderRq stopLimitRequest1 = EnterOrderRq.createNewOrderRq(1, "ABC" , 1 , LocalDateTime.now() , SELL,100,50,1,shareholder.getShareholderId(),0,0,100);
@@ -138,7 +132,7 @@ public class StopLimitOrderTest {
 
     }
     @Test
-    void stop_limit_will_active_after_some_trade()
+    void stop_limit_order_activates_after_some_trade()
     {
         broker1.increaseCreditBy(100_000_000);
         EnterOrderRq stopLimitRequest = EnterOrderRq.createNewOrderRq(1, "ABC" , 1 , LocalDateTime.now() , BUY,100,50,1,shareholder.getShareholderId(),0,0,100);
@@ -151,7 +145,7 @@ public class StopLimitOrderTest {
 
     }
     @Test
-    void stop_limit_will_active_after_update()
+    void stop_limit_order_activates_after_update()
     {
         broker1.increaseCreditBy(100_000_000);
         EnterOrderRq stopLimitRequest = EnterOrderRq.createNewOrderRq(1, "ABC" , 1 , LocalDateTime.now() , BUY,100,50,1,shareholder.getShareholderId(),0,0,200);
@@ -167,7 +161,7 @@ public class StopLimitOrderTest {
         verify(eventPublisher).publish(new OrderActivatedEvent(4, 1));
     }
     @Test
-    void buy_stop_limit_active_at_entry_time_and_make_trades()
+    void buy_stop_limit_activates_on_entry()
     {
 
         broker1.increaseCreditBy(100_000_000);
@@ -186,7 +180,7 @@ public class StopLimitOrderTest {
     }
 
     @Test
-    void sell_stop_limit_active_at_entry_time_and_make_trades()
+    void sell_stop_limit_activates_on_entry()
     {
         broker1.increaseCreditBy(100_000_000);
         EnterOrderRq sellOrder = EnterOrderRq.createNewOrderRq(2, "ABC" , 2 , LocalDateTime.now() , SELL,100,50,1,shareholder.getShareholderId(),0,0,0);
@@ -203,7 +197,7 @@ public class StopLimitOrderTest {
         verify(eventPublisher).publish(new OrderExecutedEvent(1, 1,List.of(new TradeDTO(trade))));
     }
     @Test
-    void two_buy_order_activate_together()
+    void two_buy_orders_activate_together()
     {
         broker1.increaseCreditBy(100_000_000);
         EnterOrderRq stopLimitRequest2 = EnterOrderRq.createNewOrderRq(2, "ABC" , 2 , LocalDateTime.now() , BUY,100,200,1,shareholder.getShareholderId(),0,0,200);
@@ -228,7 +222,7 @@ public class StopLimitOrderTest {
         verify(eventPublisher).publish(new OrderExecutedEvent(4, 2,List.of(new TradeDTO(trade2))));
     }
     @Test
-    void two_sell_order_activate_together()
+    void two_sell_orders_activate_together()
     {
         broker1.increaseCreditBy(100_000_000);
         EnterOrderRq stopLimitRequest2 = EnterOrderRq.createNewOrderRq(2, "ABC" , 2 , LocalDateTime.now() , SELL,50,200,1,shareholder.getShareholderId(),0,0,200);
@@ -250,7 +244,7 @@ public class StopLimitOrderTest {
 
     }
     @Test
-    void buy_activate_on_update_and_match()
+    void buy_activates_on_update()
     {
         broker1.increaseCreditBy(100_000_000);
         EnterOrderRq stopLimitRequest1 = EnterOrderRq.createNewOrderRq(1, "ABC" , 1 , LocalDateTime.now() , BUY,50,200,1,shareholder.getShareholderId(),0,0,300);
@@ -269,38 +263,34 @@ public class StopLimitOrderTest {
         verify(eventPublisher).publish(new OrderExecutedEvent(5, 1,List.of(new TradeDTO(trade))));
     }
     @Test
-    void error_if_peak_size_is_not_zero()
+    void stop_limit_order_with_peak_size_rejected()
     {
         broker1.increaseCreditBy(100_000_000);
         EnterOrderRq stopLimitRequest1 = EnterOrderRq.createNewOrderRq(1, "ABC" , 1 , LocalDateTime.now() , BUY,50,200,1,shareholder.getShareholderId(),1,0,300);
         orderHandler.handleEnterOrder(stopLimitRequest1);
         verify(eventPublisher).publish((new OrderRejectedEvent(1,1,List.of(STOP_LIMIT_ORDER_IS_ICEBERG))));
-        
     }
     @Test
-    void error_if_min_execution_is_not_zero()
+    void stop_limit_order_with_min_execution_rejected()
     {
         broker1.increaseCreditBy(100_000_000);
         EnterOrderRq stopLimitRequest1 = EnterOrderRq.createNewOrderRq(1, "ABC" , 1 , LocalDateTime.now() , BUY,50,200,1,shareholder.getShareholderId(),0,1,300);
         orderHandler.handleEnterOrder(stopLimitRequest1);
         verify(eventPublisher).publish((new OrderRejectedEvent(1,1,List.of(STOP_LIMIT_ORDER_HAS_MINIMUM_EXECUTION_QUANTITY))));
-
-
     }
     @Test
-    void delete_deactivated_order()
+    void activate_order_gets_removed_from_deactivated_list()
     {
         broker1.increaseCreditBy(100_000_000);
         EnterOrderRq stopLimitRequest1 = EnterOrderRq.createNewOrderRq(1, "ABC" , 1 , LocalDateTime.now() , BUY,50,200,1,shareholder.getShareholderId(),0,0,300);
         orderHandler.handleEnterOrder(stopLimitRequest1);
-        //    public DeleteOrderRq(long requestId, String securityIsin, Side side, long orderId) {
         DeleteOrderRq delete = new DeleteOrderRq(1 , "ABC",Side.BUY , 1);
         orderHandler.handleDeleteOrder(delete);
         verify(eventPublisher).publish(new OrderDeletedEvent(1,1));
         assertThat(security.getDeactivatedOrders().size()).isEqualTo(0);
     }
     @Test
-    void an_activated_order_make_another_one_active()
+    void activated_order_activates_another()
     {
         broker1.increaseCreditBy(100_000_000);
         EnterOrderRq stopLimitRequest2 = EnterOrderRq.createNewOrderRq(2, "ABC" , 2 , LocalDateTime.now() , BUY,100,300,1,shareholder.getShareholderId(),0,0,200);
@@ -316,12 +306,10 @@ public class StopLimitOrderTest {
         orderHandler.handleEnterOrder(sellOrder);
         verify(eventPublisher).publish(new OrderActivatedEvent(3,1));
         verify(eventPublisher).publish(new OrderActivatedEvent(3,2));
-
-
     }
 
     @Test
-    void broker_has_not_enough_credit()
+    void order_with_insufficient_broker_credit_rejected()
     {
         broker1.increaseCreditBy(100*300);
         EnterOrderRq stopLimitRequest2 = EnterOrderRq.createNewOrderRq(2, "ABC" , 2 , LocalDateTime.now() , BUY,100,300,1,shareholder.getShareholderId(),0,0,200);
@@ -330,13 +318,5 @@ public class StopLimitOrderTest {
         EnterOrderRq update = EnterOrderRq.createUpdateOrderRq(1,"ABC", 2, LocalDateTime.now(), BUY, 100, 350,1, shareholder.getShareholderId(), 0,200);
         orderHandler.handleEnterOrder(update);
         verify(eventPublisher).publish(new OrderRejectedEvent(1,2,List.of(Message.BUYER_HAS_NOT_ENOUGH_CREDIT)));
-
     }
-
-
-
-
-
-
-
 }

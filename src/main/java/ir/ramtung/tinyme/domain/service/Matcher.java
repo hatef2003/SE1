@@ -8,7 +8,6 @@ import java.util.ListIterator;
 
 @Service
 public class Matcher {
-
     public MatchResult match(Order newOrder) {
         boolean isUpdate = newOrder.getSecurity().getOrderBook().findByOrderId(newOrder.getSide(), newOrder.getOrderId())!=null;
         newOrder.getSecurity().getOrderBook().removeByOrderId(newOrder.getSide(), newOrder.getOrderId());
@@ -73,9 +72,7 @@ public class Matcher {
     {
         assert newOrder.getSide() == Side.SELL;
         for (Trade trade : trades) {
-            LinkedList<Trade> tempListTrade = new LinkedList<>();
-            tempListTrade.add(trade);
-            newOrder.getBroker().decreaseCreditBy(trade.getPrice()*trade.getQuantity());
+            newOrder.getBroker().decreaseCreditBy((long) trade.getPrice() *trade.getQuantity());
             newOrder.getSecurity().getOrderBook().restoreBuyOrder(trade.getBuy());
         }
     }

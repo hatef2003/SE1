@@ -18,6 +18,7 @@ import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Service
 public class OrderHandler {
@@ -35,57 +36,20 @@ public class OrderHandler {
         this.eventPublisher = eventPublisher;
         this.matcher = matcher;
     }
-
-    private void handleActivatedOrderSortedByTime(Security security, long request_id) {
-        ArrayList<StopLimitOrder> activatedList = new ArrayList<StopLimitOrder>();
-        for (var stopLimitOrder : security.getDeactivatedOrders()) {
-            if (stopLimitOrder.isActive(security.getLastTradePrice())) {
-
-                activatedList.add(stopLimitOrder);
-            }
-        }
-        for (var activated : activatedList) {
-            security.removeFromDeactivatedList(activated.getOrderId());
-        }
-        for (StopLimitOrder stopLimitOrder : activatedList) {
-            stopLimitOrder.restoreBrokerCredit();
-            Order newOrder = new Order(stopLimitOrder);
-            MatchResult result = matcher.execute(newOrder);
-            eventPublisher.publish(new OrderActivatedEvent(request_id, stopLimitOrder.getOrderId()));
-            if (!result.trades().isEmpty()) {
-                eventPublisher.publish(new OrderExecutedEvent(request_id, stopLimitOrder.getOrderId(),
-                        result.trades().stream().map(TradeDTO::new).collect(Collectors.toList())));
-                int lastTradePrice = result.trades().get(result.trades().size() - 1).getPrice();
-                newOrder.getSecurity().setLastTradePrice(lastTradePrice);
-                for (var deactivatedOrder : security.getDeactivatedOrders()) {
-                    if (deactivatedOrder.isActive(lastTradePrice)) {
-                        activatedList.add(deactivatedOrder);
-                        security.removeFromDeactivatedList(deactivatedOrder.getOrderId());
-                    }
-                }
-            }
-
-        }
-    }
-
-    private void handleActivatedOrderSortedByStopPrice(Security security, long request_id) {
+    private ArrayList<StopLimitOrder> findActivatedStopLimitOrders(Security security)
+    {
         ArrayList<StopLimitOrder> activatedList = new ArrayList<>();
-        for (var order : security.getDeactivatedBuyOrders()) {
+        for (StopLimitOrder order : Stream.concat(security.getDeactivatedBuyOrders().stream(),
+                security.getDeactivatedSellOrders().stream()).toList())
             if (order.isActive(security.getLastTradePrice())) {
                 activatedList.add(order);
+                security.removeFromDeactivatedList(order.getOrderId());
             }
-        }
-        for (var order : security.getDeactivatedSellOrders()) {
-            if (order.isActive(security.getLastTradePrice())) {
-                activatedList.add(order);
-            }
-        }
-        for (var order: activatedList)
-        {
-            security.removeFromDeactivatedList(order.getOrderId());
-        }
-        int size = activatedList.size();
-        for (int i = 0 ; i <size; i ++) {
+        return activatedList;
+    }
+    private void activateStopLimitOrders(Security security, long request_id) {
+        ArrayList<StopLimitOrder> activatedList = findActivatedStopLimitOrders(security);
+        for (int i = 0 ; i < activatedList.size(); i++) {
             StopLimitOrder stopLimitOrder = activatedList.get(i);
             stopLimitOrder.restoreBrokerCredit();
             Order newOrder = new Order(stopLimitOrder);
@@ -96,26 +60,10 @@ public class OrderHandler {
                         result.trades().stream().map(TradeDTO::new).collect(Collectors.toList())));
                 int lastTradePrice = result.trades().get(result.trades().size() - 1).getPrice();
                 newOrder.getSecurity().setLastTradePrice(lastTradePrice);
-                for (var deactivatedOrder : security.getDeactivatedBuyOrders()) {
-                    if (deactivatedOrder.isActive(lastTradePrice)) {
-                        activatedList.add(deactivatedOrder);
-                        size++;
-                    }
-                }
-                for (var deactivatedOrder : security.getDeactivatedSellOrders()) {
-                    if (deactivatedOrder.isActive(lastTradePrice)) {
-                        activatedList.add(deactivatedOrder);
-                    }
-                }
-                for (var active : activatedList)
-                {
-                    security.removeFromDeactivatedList(active.getOrderId());
-                }
+                activatedList.addAll(findActivatedStopLimitOrders(security));
             }
-
         }
     }
-
     public void handleEnterOrder(EnterOrderRq enterOrderRq) {
         try {
             validateEnterOrderRq(enterOrderRq);
@@ -134,7 +82,8 @@ public class OrderHandler {
                 eventPublisher.publish(new OrderRejectedEvent(enterOrderRq.getRequestId(), enterOrderRq.getOrderId(),
                         List.of(Message.BUYER_HAS_NOT_ENOUGH_CREDIT)));
                 return;
-            }if (matchResult.outcome() == MatchingOutcome.NOT_ENOUGH_POSITIONS) {
+            }
+            if (matchResult.outcome() == MatchingOutcome.NOT_ENOUGH_POSITIONS) {
                 eventPublisher.publish(new OrderRejectedEvent(enterOrderRq.getRequestId(), enterOrderRq.getOrderId(),
                         List.of(Message.SELLER_HAS_NOT_ENOUGH_POSITIONS)));
                 return;
@@ -144,22 +93,20 @@ public class OrderHandler {
                         List.of(Message.TRADE_QUANTITY_LESS_THAN_MINIMUM)));
                 return;
             }
-            if (enterOrderRq.getRequestType() == OrderEntryType.NEW_ORDER) {
+            if (enterOrderRq.getRequestType() == OrderEntryType.NEW_ORDER)
                 eventPublisher.publish(new OrderAcceptedEvent(enterOrderRq.getRequestId(), enterOrderRq.getOrderId()));
-            } else
+            else
                 eventPublisher.publish(new OrderUpdatedEvent(enterOrderRq.getRequestId(), enterOrderRq.getOrderId()));
-            if (!matchResult.trades().isEmpty()|| enterOrderRq.getRequestType() == OrderEntryType.UPDATE_ORDER) {
-                if (!matchResult.trades().isEmpty()) {
+            if (!matchResult.trades().isEmpty() || enterOrderRq.getRequestType() == OrderEntryType.UPDATE_ORDER) {
+                if (!matchResult.trades().isEmpty())
                     eventPublisher.publish(new OrderExecutedEvent(enterOrderRq.getRequestId(), enterOrderRq.getOrderId(), matchResult.trades().stream().map(TradeDTO::new).collect(Collectors.toList())));
-                }
-                handleActivatedOrderSortedByStopPrice(security, enterOrderRq.getRequestId());
+                activateStopLimitOrders(security, enterOrderRq.getRequestId());
             }
         } catch (InvalidRequestException ex) {
             eventPublisher.publish(
                     new OrderRejectedEvent(enterOrderRq.getRequestId(), enterOrderRq.getOrderId(), ex.getReasons()));
         }
     }
-
     public void handleDeleteOrder(DeleteOrderRq deleteOrderRq) {
         try {
             validateDeleteOrderRq(deleteOrderRq);
@@ -171,7 +118,6 @@ public class OrderHandler {
                     new OrderRejectedEvent(deleteOrderRq.getRequestId(), deleteOrderRq.getOrderId(), ex.getReasons()));
         }
     }
-
     private void validateEnterOrderRq(EnterOrderRq enterOrderRq) throws InvalidRequestException {
         List<String> errors = new LinkedList<>();
         if (enterOrderRq.getOrderId() <= 0)
@@ -202,7 +148,6 @@ public class OrderHandler {
         if (!errors.isEmpty())
             throw new InvalidRequestException(errors);
     }
-
     private void validateDeleteOrderRq(DeleteOrderRq deleteOrderRq) throws InvalidRequestException {
         List<String> errors = new LinkedList<>();
         if (deleteOrderRq.getOrderId() <= 0)
