@@ -13,6 +13,7 @@ import static ir.ramtung.tinyme.domain.entity.Side.BUY;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.stream.Stream;
 
 @Getter
 @Builder
@@ -154,38 +155,8 @@ public class Security {
         }
     }
     public StopLimitOrder findStopLimitOrderById(long id) {
-        StopLimitOrder sell = null;
-        StopLimitOrder buy= null ; 
-        for (var order : deactivatedBuyOrders )
-        {
-            if (order.getOrderId() == id)
-            {
-                buy = order;
-            }
-        }
-        for (var order : deactivatedSellOrders)
-        {
-            if (order.getOrderId()== id)
-            {
-                sell = order;
-            }
-        }
-        if (sell !=null && buy !=null)
-        {
-            return null;
-        }
-        else 
-        {
-            if (sell !=null)
-            {
-                return sell;
-            }
-            if (buy !=null)
-            {
-                return buy;
-            }
-        }
-        return null;
+        Stream<StopLimitOrder> joinedDeactivatedList = Stream.concat(deactivatedBuyOrders.stream(), deactivatedSellOrders.stream());
+        return joinedDeactivatedList.filter(order->order.getOrderId() == id).findFirst().orElse(null);
     }
     private void addToDeactivatedBuy(StopLimitOrder newOrder) {
         deactivatedBuyOrders.add(newOrder);
