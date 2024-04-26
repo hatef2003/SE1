@@ -157,7 +157,9 @@ public class Security {
                 deactivatedBuyOrders.remove(stopLimitOrder);
                 if (stopLimitOrder.getBroker().hasEnoughCredit(updateOrderRq.getPrice() * updateOrderRq.getQuantity()))
                 {
+                    stopLimitOrder.updateFromRequest(updateOrderRq);
                     addToDeactivatedBuy(stopLimitOrder);
+
                 }
                 else
                 {
@@ -168,7 +170,7 @@ public class Security {
                 deactivatedSellOrders.remove(stopLimitOrder);
                 addToDeactivatedSell(stopLimitOrder);
             }
-            return MatchResult.executed(order, new LinkedList<>());
+            return MatchResult.executed(stopLimitOrder, new LinkedList<>());
         }
     }
 
