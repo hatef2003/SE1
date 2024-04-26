@@ -12,7 +12,6 @@ import static ir.ramtung.tinyme.domain.entity.Side.BUY;
 
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.LinkedList;
 import java.util.List;
 
 @Getter
@@ -25,8 +24,6 @@ public class Security {
     private int lotSize = 1;
     @Builder.Default
     private OrderBook orderBook = new OrderBook();
-    @Builder.Default
-    ArrayList<StopLimitOrder> deactivatedOrders = new ArrayList<>();
     @Builder.Default
     ArrayList<StopLimitOrder> deactivatedBuyOrders = new ArrayList<>();
     @Builder.Default
@@ -58,7 +55,6 @@ public class Security {
                 newOrder.restoreBrokerCredit();
                 order = new Order(newOrder);
             } else {
-                deactivatedOrders.add(newOrder);
                 if (enterOrderRq.getSide() == Side.BUY)
                     addToDeactivatedBuy(newOrder);
                 else
@@ -158,9 +154,37 @@ public class Security {
         }
     }
     public StopLimitOrder findStopLimitOrderById(long id) {
-        for (var order : deactivatedOrders)
+        StopLimitOrder sell = null;
+        StopLimitOrder buy= null ; 
+        for (var order : deactivatedBuyOrders )
+        {
             if (order.getOrderId() == id)
-                return order;
+            {
+                buy = order;
+            }
+        }
+        for (var order : deactivatedSellOrders)
+        {
+            if (order.getOrderId()== id)
+            {
+                sell = order;
+            }
+        }
+        if (sell !=null && buy !=null)
+        {
+            return null;
+        }
+        else 
+        {
+            if (sell !=null)
+            {
+                return sell;
+            }
+            if (buy !=null)
+            {
+                return buy;
+            }
+        }
         return null;
     }
     private void addToDeactivatedBuy(StopLimitOrder newOrder) {
@@ -174,7 +198,6 @@ public class Security {
     public void removeFromDeactivatedList(long id) {
         StopLimitOrder order = findStopLimitOrderById(id);
         if (order != null) {
-            deactivatedOrders.remove(order);
             if (order.getSide() == Side.BUY)
                 deactivatedBuyOrders.remove(order);
             else

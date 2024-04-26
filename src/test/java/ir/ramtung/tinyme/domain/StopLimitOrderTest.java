@@ -287,7 +287,7 @@ public class StopLimitOrderTest {
         DeleteOrderRq delete = new DeleteOrderRq(1 , "ABC",Side.BUY , 1);
         orderHandler.handleDeleteOrder(delete);
         verify(eventPublisher).publish(new OrderDeletedEvent(1,1));
-        assertThat(security.getDeactivatedOrders().size()).isEqualTo(0);
+        assertThat(security.getDeactivatedBuyOrders().size()+ security.getDeactivatedSellOrders().size()).isEqualTo(0);
     }
     @Test
     void activated_order_activates_another()
