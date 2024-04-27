@@ -26,7 +26,7 @@ public class Security {
     @Builder.Default
     private int lastTradePrice = -1;
     @Builder.Default
-    private  OrderCancellationQueue orderCancellationQueue = new  OrderCancellationQueue();
+    private OrderCancellationQueue orderCancellationQueue = new OrderCancellationQueue();
     public MatchResult newOrder(EnterOrderRq enterOrderRq, Broker broker, Shareholder shareholder, Matcher matcher) {
         if (!requestHasEnoughPositions(enterOrderRq, shareholder,
                 orderBook.totalSellQuantityByShareholder(shareholder) + enterOrderRq.getQuantity()))
