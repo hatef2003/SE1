@@ -22,6 +22,9 @@ public final class MatchResult {
     public static MatchResult notEnoughTrades() {
         return new MatchResult(MatchingOutcome.NOT_ENOUGH_TRADE , null , new LinkedList<>());
     }
+    public static MatchResult invalidRequest() {
+        return new MatchResult(MatchingOutcome.INVALID_REQ , null , new LinkedList<>());
+    }
     private MatchResult(MatchingOutcome outcome, Order remainder, LinkedList<Trade> trades) {
         this.outcome = outcome;
         this.remainder = remainder;
