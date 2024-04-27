@@ -23,10 +23,6 @@ public class Security {
     private int lotSize = 1;
     @Builder.Default
     private OrderBook orderBook = new OrderBook();
-//    @Builder.Default
-//    ArrayList<StopLimitOrder> deactivatedBuyOrders = new ArrayList<>();
-    //@Builder.Default
-    //ArrayList<StopLimitOrder> deactivatedSellOrders = new ArrayList<>();
     @Builder.Default
     private int lastTradePrice = -1;
     @Builder.Default
