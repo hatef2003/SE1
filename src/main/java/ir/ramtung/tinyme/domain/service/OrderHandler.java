@@ -64,6 +64,25 @@ public class OrderHandler {
             }
         }
     }
+    private boolean validateMatchResult(MatchingOutcome matchingOutcome , EnterOrderRq enterOrderRq)
+    {
+        if (matchingOutcome == MatchingOutcome.NOT_ENOUGH_CREDIT) {
+            eventPublisher.publish(new OrderRejectedEvent(enterOrderRq.getRequestId(), enterOrderRq.getOrderId(),
+                    List.of(Message.BUYER_HAS_NOT_ENOUGH_CREDIT)));
+            return true;
+        }
+        if (matchingOutcome == MatchingOutcome.NOT_ENOUGH_POSITIONS) {
+            eventPublisher.publish(new OrderRejectedEvent(enterOrderRq.getRequestId(), enterOrderRq.getOrderId(),
+                    List.of(Message.SELLER_HAS_NOT_ENOUGH_POSITIONS)));
+            return true;
+        }
+        if (matchingOutcome == MatchingOutcome.NOT_ENOUGH_TRADE) {
+            eventPublisher.publish(new OrderRejectedEvent(enterOrderRq.getRequestId(), enterOrderRq.getOrderId(),
+                    List.of(Message.TRADE_QUANTITY_LESS_THAN_MINIMUM)));
+            return true;
+        }
+        return false;
+    }
     public void handleEnterOrder(EnterOrderRq enterOrderRq) {
         try {
             validateEnterOrderRq(enterOrderRq);
@@ -77,22 +96,9 @@ public class OrderHandler {
                 matchResult = security.newOrder(enterOrderRq, broker, shareholder, matcher);
             else
                 matchResult = security.updateOrder(enterOrderRq, matcher);
-
-            if (matchResult.outcome() == MatchingOutcome.NOT_ENOUGH_CREDIT) {
-                eventPublisher.publish(new OrderRejectedEvent(enterOrderRq.getRequestId(), enterOrderRq.getOrderId(),
-                        List.of(Message.BUYER_HAS_NOT_ENOUGH_CREDIT)));
+            
+            if (validateMatchResult(matchResult.outcome(), enterOrderRq))
                 return;
-            }
-            if (matchResult.outcome() == MatchingOutcome.NOT_ENOUGH_POSITIONS) {
-                eventPublisher.publish(new OrderRejectedEvent(enterOrderRq.getRequestId(), enterOrderRq.getOrderId(),
-                        List.of(Message.SELLER_HAS_NOT_ENOUGH_POSITIONS)));
-                return;
-            }
-            if (matchResult.outcome() == MatchingOutcome.NOT_ENOUGH_TRADE) {
-                eventPublisher.publish(new OrderRejectedEvent(enterOrderRq.getRequestId(), enterOrderRq.getOrderId(),
-                        List.of(Message.TRADE_QUANTITY_LESS_THAN_MINIMUM)));
-                return;
-            }
             if (enterOrderRq.getRequestType() == OrderEntryType.NEW_ORDER)
                 eventPublisher.publish(new OrderAcceptedEvent(enterOrderRq.getRequestId(), enterOrderRq.getOrderId()));
             else
