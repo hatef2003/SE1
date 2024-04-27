@@ -70,9 +70,9 @@ public class StopLimitOrderTest {
         EnterOrderRq stopLimitRequest = EnterOrderRq.createNewOrderRq(1, "ABC" , 1 , LocalDateTime.now() , BUY,100,50,1,shareholder.getShareholderId(),0,0,100);
         orderHandler.handleEnterOrder(stopLimitRequest);
         verify(eventPublisher).publish((new OrderAcceptedEvent(1, 1)));
-        assertThat(security.findStopLimitOrderById(1).getStopLimit()).isEqualTo(100);
-        assertThat(security.getDeactivatedBuyOrders().size()).isEqualTo(1);
-        assertThat(security.getDeactivatedSellOrders().size()).isEqualTo(0);
+        assertThat(security.getOrderCancellationQueue().findStopLimitOrderById(1).getStopLimit()).isEqualTo(100);
+        assertThat(security.getOrderCancellationQueue().getDeactivatedBuyOrders().size()).isEqualTo(1);
+        assertThat(security.getOrderCancellationQueue().getDeactivatedSellOrders().size()).isEqualTo(0);
 
     }
     @Test
@@ -84,9 +84,9 @@ public class StopLimitOrderTest {
         orderHandler.handleEnterOrder(stopLimitRequest1);
         orderHandler.handleEnterOrder(stopLimitRequest2);
         verify(eventPublisher).publish((new OrderAcceptedEvent(1, 1)));
-        assertThat(security.findStopLimitOrderById(1).getStopLimit()).isEqualTo(100);
-        assertThat(security.getDeactivatedBuyOrders().get(0).getOrderId()).isEqualTo(1);
-        assertThat(security.getDeactivatedSellOrders().size()).isEqualTo(0);
+        assertThat(security.getOrderCancellationQueue().findStopLimitOrderById(1).getStopLimit()).isEqualTo(100);
+        assertThat(security.getOrderCancellationQueue().getDeactivatedBuyOrders().get(0).getOrderId()).isEqualTo(1);
+        assertThat(security.getOrderCancellationQueue().getDeactivatedSellOrders().size()).isEqualTo(0);
 
     }
     @Test
@@ -98,9 +98,9 @@ public class StopLimitOrderTest {
         orderHandler.handleEnterOrder(stopLimitRequest1);
         orderHandler.handleEnterOrder(stopLimitRequest2);
         verify(eventPublisher).publish((new OrderAcceptedEvent(1, 1)));
-        assertThat(security.findStopLimitOrderById(1).getStopLimit()).isEqualTo(100);
-        assertThat(security.getDeactivatedSellOrders().get(0).getOrderId()).isEqualTo(2);
-        assertThat(security.getDeactivatedBuyOrders().size()).isEqualTo(0);
+        assertThat(security.getOrderCancellationQueue().findStopLimitOrderById(1).getStopLimit()).isEqualTo(100);
+        assertThat(security.getOrderCancellationQueue().getDeactivatedSellOrders().get(0).getOrderId()).isEqualTo(2);
+        assertThat(security.getOrderCancellationQueue().getDeactivatedBuyOrders().size()).isEqualTo(0);
 
     }
     @Test
@@ -126,7 +126,7 @@ public class StopLimitOrderTest {
         EnterOrderRq buyOrder = EnterOrderRq.createNewOrderRq(3, "ABC" , 3 , LocalDateTime.now() , BUY,50,120,1,shareholder.getShareholderId(),0,0,0);
         orderHandler.handleEnterOrder(sellOrder);
         orderHandler.handleEnterOrder(buyOrder);
-        assertThat(security.getDeactivatedBuyOrders().get(0)).isNotNull();
+        assertThat(security.getOrderCancellationQueue().getDeactivatedBuyOrders().get(0)).isNotNull();
         EnterOrderRq updateStopOrderRq = EnterOrderRq.createUpdateOrderRq(4, "ABC", 1, LocalDateTime.now(), BUY, 100, 50,1, 0, 0 , 100);
         System.out.println(updateStopOrderRq.getPeakSize());
         orderHandler.handleEnterOrder(updateStopOrderRq);
@@ -259,7 +259,7 @@ public class StopLimitOrderTest {
         DeleteOrderRq delete = new DeleteOrderRq(1 , "ABC",Side.BUY , 1);
         orderHandler.handleDeleteOrder(delete);
         verify(eventPublisher).publish(new OrderDeletedEvent(1,1));
-        assertThat(security.getDeactivatedBuyOrders().size()+ security.getDeactivatedSellOrders().size()).isEqualTo(0);
+        assertThat(security.getOrderCancellationQueue().getDeactivatedBuyOrders().size()+ security.getOrderCancellationQueue().getDeactivatedSellOrders().size()).isEqualTo(0);
     }
     @Test
     void activated_order_activates_another()

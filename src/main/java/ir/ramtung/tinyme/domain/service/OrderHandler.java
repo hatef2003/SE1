@@ -39,11 +39,11 @@ public class OrderHandler {
 
     private ArrayList<StopLimitOrder> findActivatedStopLimitOrders(Security security) {
         ArrayList<StopLimitOrder> activatedList = new ArrayList<>();
-        for (StopLimitOrder order : Stream.concat(security.getDeactivatedBuyOrders().stream(),
-                security.getDeactivatedSellOrders().stream()).toList())
+        for (StopLimitOrder order : Stream.concat(security.getOrderCancellationQueue().getDeactivatedBuyOrders().stream(),
+                security.getOrderCancellationQueue().getDeactivatedSellOrders().stream()).toList())
             if (order.isActive(security.getLastTradePrice())) {
                 activatedList.add(order);
-                security.removeFromDeactivatedList(order.getOrderId());
+                security.getOrderCancellationQueue().removeFromDeactivatedList(order.getOrderId());
             }
         return activatedList;
     }

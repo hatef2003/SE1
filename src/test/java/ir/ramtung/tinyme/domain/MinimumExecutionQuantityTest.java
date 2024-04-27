@@ -3,12 +3,9 @@ package ir.ramtung.tinyme.domain;
 import ir.ramtung.tinyme.config.MockedJMSTestConfig;
 import ir.ramtung.tinyme.domain.entity.*;
 import ir.ramtung.tinyme.domain.service.Matcher;
-import ir.ramtung.tinyme.messaging.exception.InvalidRequestException;
-import ir.ramtung.tinyme.messaging.request.DeleteOrderRq;
 import ir.ramtung.tinyme.messaging.request.EnterOrderRq;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.commons.support.SearchOption;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
@@ -23,7 +20,7 @@ import static org.assertj.core.api.Assertions.*;
 
 @SpringBootTest
 @Import(MockedJMSTestConfig.class)
-class MinimumExecutionQuantity {
+class MinimumExecutionQuantityTest {
     private Security security;
     private Broker broker;
     private Shareholder shareholder;
