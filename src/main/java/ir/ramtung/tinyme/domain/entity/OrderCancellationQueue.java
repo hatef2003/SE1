@@ -6,18 +6,14 @@ import java.util.Comparator;
 import java.util.stream.Stream;
 
 @Getter
-
 public class OrderCancellationQueue {
-
     ArrayList<StopLimitOrder> deactivatedBuyOrders ;
-
     ArrayList<StopLimitOrder> deactivatedSellOrders ;
     OrderCancellationQueue()
     {
         deactivatedBuyOrders = new ArrayList<>();
         deactivatedSellOrders = new ArrayList<>();
     }
-
     public StopLimitOrder findStopLimitOrderById(long id) {
         Stream<StopLimitOrder> joinedDeactivatedList = Stream.concat(deactivatedBuyOrders.stream(), deactivatedSellOrders.stream());
         return joinedDeactivatedList.filter(order->order.getOrderId() == id).findFirst().orElse(null);

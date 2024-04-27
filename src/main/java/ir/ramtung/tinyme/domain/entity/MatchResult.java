@@ -12,7 +12,6 @@ public final class MatchResult {
     public static MatchResult executed(Order remainder, List<Trade> trades) {
         return new MatchResult(MatchingOutcome.EXECUTED, remainder, new LinkedList<>(trades));
     }
-
     public static MatchResult notEnoughCredit() {
         return new MatchResult(MatchingOutcome.NOT_ENOUGH_CREDIT, null, new LinkedList<>());
     }
@@ -49,18 +48,14 @@ public final class MatchResult {
         return Objects.equals(this.remainder, that.remainder) &&
                 Objects.equals(this.trades, that.trades);
     }
-
     @Override
     public int hashCode() {
         return Objects.hash(remainder, trades);
     }
-
     @Override
     public String toString() {
         return "MatchResult[" +
                 "remainder=" + remainder + ", " +
                 "trades=" + trades + ']';
     }
-
-
 }

@@ -29,7 +29,6 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-
 @SpringBootTest
 @Import(MockedJMSTestConfig.class)
 public class StopLimitOrderTest {
