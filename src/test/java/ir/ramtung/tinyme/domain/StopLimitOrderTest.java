@@ -262,7 +262,7 @@ public class StopLimitOrderTest {
         assertThat(security.getDeactivatedBuyOrders().size()+ security.getDeactivatedSellOrders().size()).isEqualTo(0);
     }
     @Test
-    void activated_order_activates_another()
+    void activated_buy_order_activates_another()
     {
         broker1.increaseCreditBy(100_000_000);
         EnterOrderRq stopLimitRequest2 = EnterOrderRq.createNewOrderRq(2, "ABC" , 2 , LocalDateTime.now() , BUY,100,300,1,shareholder.getShareholderId(),0,0,200);
@@ -281,6 +281,25 @@ public class StopLimitOrderTest {
     }
 
     @Test
+    void activated_sell_order_activates_another()
+    {
+        broker1.increaseCreditBy(100_000_000);
+        EnterOrderRq stopLimitRequest2 = EnterOrderRq.createNewOrderRq(2, "ABC" , 2 , LocalDateTime.now() , SELL,100,300,1,shareholder.getShareholderId(),0,0,200);
+        EnterOrderRq stopLimitRequest1 = EnterOrderRq.createNewOrderRq(1, "ABC" , 1 , LocalDateTime.now() , SELL,100,250,1,shareholder.getShareholderId(),0,0,100);
+
+        orderHandler.handleEnterOrder(stopLimitRequest2);
+        orderHandler.handleEnterOrder(stopLimitRequest1);
+        EnterOrderRq buyOrder2 = EnterOrderRq.createNewOrderRq(5, "ABC" , 5 , LocalDateTime.now() , BUY,100,50,1,shareholder.getShareholderId(),0,0,0);
+        orderHandler.handleEnterOrder(buyOrder2);
+        EnterOrderRq buyOrder = EnterOrderRq.createNewOrderRq(3, "ABC" , 3 , LocalDateTime.now() , BUY,100,250,1,shareholder.getShareholderId(),0,0,0);
+        EnterOrderRq sellOrder = EnterOrderRq.createNewOrderRq(4, "ABC" , 4 , LocalDateTime.now() , SELL,100,250,1,shareholder.getShareholderId(),0,0,0);
+        orderHandler.handleEnterOrder(sellOrder);
+        orderHandler.handleEnterOrder(buyOrder);
+        verify(eventPublisher).publish(new OrderActivatedEvent(3,1));
+        verify(eventPublisher).publish(new OrderActivatedEvent(3,2));
+    }
+
+    @Test
     void order_with_insufficient_broker_credit_rejected()
     {
         broker1.increaseCreditBy(100*300);
@@ -292,3 +311,4 @@ public class StopLimitOrderTest {
         verify(eventPublisher).publish(new OrderRejectedEvent(1,2,List.of(Message.BUYER_HAS_NOT_ENOUGH_CREDIT)));
     }
 }
+
