@@ -36,20 +36,8 @@ public class OrderHandler {
         this.eventPublisher = eventPublisher;
         this.matcher = matcher;
     }
-
-    private ArrayList<StopLimitOrder> findActivatedStopLimitOrders(Security security) {
-        ArrayList<StopLimitOrder> activatedList = new ArrayList<>();
-        for (StopLimitOrder order : Stream.concat(security.getDeactivatedBuyOrders().stream(),
-                security.getDeactivatedSellOrders().stream()).toList())
-            if (order.isActive(security.getLastTradePrice())) {
-                activatedList.add(order);
-                security.removeFromDeactivatedList(order.getOrderId());
-            }
-        return activatedList;
-    }
-
     private void activateStopLimitOrders(Security security, long request_id) {
-        ArrayList<StopLimitOrder> activatedList = findActivatedStopLimitOrders(security);
+        ArrayList<StopLimitOrder> activatedList = security.getOrderCancellationQueue().getActivatedOrder(security.getLastTradePrice());
         for (int i = 0; i < activatedList.size(); i++) {
             StopLimitOrder stopLimitOrder = activatedList.get(i);
             stopLimitOrder.restoreBrokerCredit();
@@ -61,7 +49,7 @@ public class OrderHandler {
                         result.trades().stream().map(TradeDTO::new).collect(Collectors.toList())));
                 int lastTradePrice = result.trades().get(result.trades().size() - 1).getPrice();
                 newOrder.getSecurity().setLastTradePrice(lastTradePrice);
-                activatedList.addAll(findActivatedStopLimitOrders(security));
+                activatedList.addAll(security.getOrderCancellationQueue().getActivatedOrder(security.getLastTradePrice()));
             }
         }
     }
