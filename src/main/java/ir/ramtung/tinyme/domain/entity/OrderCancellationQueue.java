@@ -35,4 +35,16 @@ public class OrderCancellationQueue {
                 deactivatedSellOrders.remove(order);
         }
     }
+    public ArrayList<StopLimitOrder> getActivatedOrder(int lastTradePrice)
+    {
+        ArrayList<StopLimitOrder> activatedList = new ArrayList<>(); 
+        for (
+        StopLimitOrder order : Stream.concat(deactivatedBuyOrders.stream(),
+                deactivatedSellOrders.stream()).toList())
+            if (order.isActive(lastTradePrice)) {
+                activatedList.add(order);
+                this.removeFromDeactivatedList(order.getOrderId());
+            }
+        return activatedList;
+    }
 }
