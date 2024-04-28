@@ -310,5 +310,6 @@ public class StopLimitOrderTest {
         orderHandler.handleEnterOrder(update);
         verify(eventPublisher).publish(new OrderRejectedEvent(1,2,List.of(Message.BUYER_HAS_NOT_ENOUGH_CREDIT)));
     }
-}
 
+
+}
