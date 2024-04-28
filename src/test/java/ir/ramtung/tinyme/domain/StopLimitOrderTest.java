@@ -370,7 +370,7 @@ public class StopLimitOrderTest {
         verify(eventPublisher).publish(new OrderActivatedEvent(3, 2));
     }
     @Test 
-    void broker_credit_before_match()
+    void broker_credit_before_activate_is_correct()
     {
         broker.increaseCreditBy(200 * 50);
         EnterOrderRq stopLimitRequest = EnterOrderRq.createNewOrderRq(2, "ABC", 2, LocalDateTime.now(), BUY, 50, 100,
@@ -379,7 +379,7 @@ public class StopLimitOrderTest {
         assertThat(broker.getCredit()).isEqualTo(100*50);
     }
     @Test 
-    void broker_credit_after_activate()
+    void broker_credit_after_activate_is_correct()
     { 
         Broker broker2;
         broker2 = Broker.builder().brokerId(2).build();
