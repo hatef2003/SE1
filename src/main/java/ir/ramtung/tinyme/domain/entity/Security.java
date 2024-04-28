@@ -168,12 +168,10 @@ public class Security {
             if (((StopLimitOrder) order).isActive(lastTradePrice))
                 ((StopLimitOrder) order).restoreBrokerCredit();
             else {
-                if (order.getSide() == Side.BUY) {
+                if (order.getSide() == Side.BUY)
                     orderCancellationQueue.addToDeactivatedBuy((StopLimitOrder) order);
-                } else {
+                else
                     orderCancellationQueue.addToDeactivatedSell((StopLimitOrder) order);
-
-                }
                 return MatchResult.executed(order, List.of());
             }
         }

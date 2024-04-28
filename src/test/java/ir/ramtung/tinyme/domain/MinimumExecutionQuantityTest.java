@@ -144,7 +144,6 @@ class MinimumExecutionQuantityTest {
 
     @Test
     void update_order_check() {
-
         EnterOrderRq newOrderRequest = EnterOrderRq.createNewOrderRq(0, security.getIsin(), 2, LocalDateTime.now(), BUY,
                 200, 15850, 0, shareholder.getShareholderId(), 0, 65);
         Order newOrder2 = new Order(9, security, SELL, 55, 18000, broker, shareholder);

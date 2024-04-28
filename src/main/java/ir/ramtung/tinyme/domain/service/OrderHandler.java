@@ -54,36 +54,27 @@ public class OrderHandler {
         }
     }
 
-    private boolean validateMatchResult(MatchingOutcome matchingOutcome, EnterOrderRq enterOrderRq) {
-        if (matchingOutcome == MatchingOutcome.NOT_ENOUGH_CREDIT) {
+    private void publishMatchError(MatchingOutcome matchingOutcome, EnterOrderRq enterOrderRq) {
+        if (matchingOutcome == MatchingOutcome.NOT_ENOUGH_CREDIT)
             eventPublisher.publish(new OrderRejectedEvent(enterOrderRq.getRequestId(), enterOrderRq.getOrderId(),
                     List.of(Message.BUYER_HAS_NOT_ENOUGH_CREDIT)));
-            return true;
-        }
-        if (matchingOutcome == MatchingOutcome.NOT_ENOUGH_POSITIONS) {
+        else if (matchingOutcome == MatchingOutcome.NOT_ENOUGH_POSITIONS)
             eventPublisher.publish(new OrderRejectedEvent(enterOrderRq.getRequestId(), enterOrderRq.getOrderId(),
                     List.of(Message.SELLER_HAS_NOT_ENOUGH_POSITIONS)));
-            return true;
-        }
-        if (matchingOutcome == MatchingOutcome.NOT_ENOUGH_TRADE) {
+        else if (matchingOutcome == MatchingOutcome.NOT_ENOUGH_TRADE)
             eventPublisher.publish(new OrderRejectedEvent(enterOrderRq.getRequestId(), enterOrderRq.getOrderId(),
                     List.of(Message.TRADE_QUANTITY_LESS_THAN_MINIMUM)));
-            return true;
-        }
-        return false;
     }
 
-    private void publishEvent(EnterOrderRq enterOrderRq , MatchResult matchResult)
+    private void publishExecutedOrderEvents(EnterOrderRq enterOrderRq , MatchResult matchResult)
     {
         if (enterOrderRq.getRequestType() == OrderEntryType.NEW_ORDER)
             eventPublisher.publish(new OrderAcceptedEvent(enterOrderRq.getRequestId(), enterOrderRq.getOrderId()));
         else 
             eventPublisher.publish(new OrderUpdatedEvent(enterOrderRq.getRequestId(), enterOrderRq.getOrderId()));
-        if (!matchResult.trades().isEmpty()) 
-
-                eventPublisher.publish(new OrderExecutedEvent(enterOrderRq.getRequestId(), enterOrderRq.getOrderId(),
-                                matchResult.trades().stream().map(TradeDTO::new).collect(Collectors.toList())));
-        
+        if (!matchResult.trades().isEmpty())
+            eventPublisher.publish(new OrderExecutedEvent(enterOrderRq.getRequestId(), enterOrderRq.getOrderId(),
+                    matchResult.trades().stream().map(TradeDTO::new).collect(Collectors.toList())));
     }
 
     public void handleEnterOrder(EnterOrderRq enterOrderRq) {
@@ -100,11 +91,11 @@ public class OrderHandler {
             else
                 matchResult = security.updateOrder(enterOrderRq, matcher);
 
-            if (validateMatchResult(matchResult.outcome(), enterOrderRq))
-                return;
-            publishEvent(enterOrderRq, matchResult);
-            activateStopLimitOrders(security, enterOrderRq.getRequestId());
-            
+            if (matchResult.outcome() == MatchingOutcome.EXECUTED) {
+                publishExecutedOrderEvents(enterOrderRq, matchResult);
+                activateStopLimitOrders(security, enterOrderRq.getRequestId());
+            } else
+                publishMatchError(matchResult.outcome(), enterOrderRq);
         } catch (InvalidRequestException ex) {
             eventPublisher.publish(
                     new OrderRejectedEvent(enterOrderRq.getRequestId(), enterOrderRq.getOrderId(), ex.getReasons()));
