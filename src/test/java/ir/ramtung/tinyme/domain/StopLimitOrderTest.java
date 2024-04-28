@@ -369,4 +369,35 @@ public class StopLimitOrderTest {
         verify(eventPublisher).publish(new OrderActivatedEvent(3, 1));
         verify(eventPublisher).publish(new OrderActivatedEvent(3, 2));
     }
+    @Test 
+    void broker_credit_before_match()
+    {
+        broker.increaseCreditBy(200 * 50);
+        EnterOrderRq stopLimitRequest = EnterOrderRq.createNewOrderRq(2, "ABC", 2, LocalDateTime.now(), BUY, 50, 100,
+                1, shareholder.getShareholderId(), 0, 0, 200);
+        orderHandler.handleEnterOrder(stopLimitRequest);
+        assertThat(broker.getCredit()).isEqualTo(100*50);
+    }
+    @Test 
+    void broker_credit_after_activate()
+    { 
+        Broker broker2;
+        broker2 = Broker.builder().brokerId(2).build();
+        brokerRepository.addBroker(broker2);
+        broker.increaseCreditBy(100_000);
+        EnterOrderRq sellOrder = EnterOrderRq.createNewOrderRq(2, "ABC", 2, LocalDateTime.now(), SELL, 100, 50, 1,
+                shareholder.getShareholderId(), 0, 0, 0);
+        EnterOrderRq buyOrder = EnterOrderRq.createNewOrderRq(3, "ABC", 3, LocalDateTime.now(), BUY, 100, 50, 1,
+                shareholder.getShareholderId(), 0, 0, 0);
+        orderHandler.handleEnterOrder(sellOrder);
+        orderHandler.handleEnterOrder(buyOrder);
+        assertThat(broker.getCredit()).isEqualTo(100_000);
+        EnterOrderRq stopLimitRequest = EnterOrderRq.createNewOrderRq(1, "ABC", 1, LocalDateTime.now(), BUY, 100, 50,
+                1, shareholder.getShareholderId(), 0, 0, 45);
+        EnterOrderRq matchingSellOrder = EnterOrderRq.createNewOrderRq(5, "ABC",6,LocalDateTime.now(),Side.SELL,100,45,broker2.getBrokerId(),shareholder.getShareholderId(),0 );
+        orderHandler.handleEnterOrder(matchingSellOrder);
+        orderHandler.handleEnterOrder(stopLimitRequest);
+        assertThat(broker.getCredit()).isEqualTo(100_000 - 100*45);
+
+    }
 }
