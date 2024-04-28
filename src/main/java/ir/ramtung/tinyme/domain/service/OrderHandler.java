@@ -35,6 +35,7 @@ public class OrderHandler {
         this.eventPublisher = eventPublisher;
         this.matcher = matcher;
     }
+
     private void activateStopLimitOrders(Security security, long request_id) {
         ArrayList<StopLimitOrder> activatedList = security.getOrderCancellationQueue().getActivatedOrder(security.getLastTradePrice());
         for (int i = 0; i < activatedList.size(); i++) {
@@ -71,6 +72,7 @@ public class OrderHandler {
         }
         return false;
     }
+
     private void publishEvent(EnterOrderRq enterOrderRq , MatchResult matchResult)
     {
         if (enterOrderRq.getRequestType() == OrderEntryType.NEW_ORDER)
@@ -83,6 +85,7 @@ public class OrderHandler {
                                 matchResult.trades().stream().map(TradeDTO::new).collect(Collectors.toList())));
         
     }
+
     public void handleEnterOrder(EnterOrderRq enterOrderRq) {
         try {
             validateEnterOrderRq(enterOrderRq);

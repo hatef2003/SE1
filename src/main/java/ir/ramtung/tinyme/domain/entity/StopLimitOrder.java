@@ -12,6 +12,7 @@ import java.time.LocalDateTime;
 @ToString(callSuper = true)
 public class StopLimitOrder extends Order{
     int stopLimit;
+
     public boolean isActive(int lastTradePrice)
     {
         if (lastTradePrice == -1)

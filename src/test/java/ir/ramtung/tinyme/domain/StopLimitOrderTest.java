@@ -73,7 +73,6 @@ public class StopLimitOrderTest {
         assertThat(security.getOrderCancellationQueue().findStopLimitOrderById(1).getStopLimit()).isEqualTo(100);
         assertThat(security.getOrderCancellationQueue().getDeactivatedBuyOrders().size()).isEqualTo(1);
         assertThat(security.getOrderCancellationQueue().getDeactivatedSellOrders().size()).isEqualTo(0);
-
     }
 
     @Test
@@ -89,7 +88,6 @@ public class StopLimitOrderTest {
         assertThat(security.getOrderCancellationQueue().findStopLimitOrderById(1).getStopLimit()).isEqualTo(100);
         assertThat(security.getOrderCancellationQueue().getDeactivatedBuyOrders().get(0).getOrderId()).isEqualTo(1);
         assertThat(security.getOrderCancellationQueue().getDeactivatedSellOrders().size()).isEqualTo(0);
-
     }
 
     @Test
@@ -105,7 +103,6 @@ public class StopLimitOrderTest {
         assertThat(security.getOrderCancellationQueue().findStopLimitOrderById(1).getStopLimit()).isEqualTo(100);
         assertThat(security.getOrderCancellationQueue().getDeactivatedSellOrders().get(0).getOrderId()).isEqualTo(2);
         assertThat(security.getOrderCancellationQueue().getDeactivatedBuyOrders().size()).isEqualTo(0);
-
     }
 
     @Test
@@ -121,7 +118,6 @@ public class StopLimitOrderTest {
         orderHandler.handleEnterOrder(sellOrder);
         orderHandler.handleEnterOrder(buyOrder);
         verify(eventPublisher).publish(new OrderActivatedEvent(3, 1));
-
     }
 
     @Test
@@ -146,7 +142,6 @@ public class StopLimitOrderTest {
 
     @Test
     void buy_stop_limit_activates_on_entry() {
-
         broker.increaseCreditBy(100_000_000);
         EnterOrderRq sellOrder = EnterOrderRq.createNewOrderRq(2, "ABC", 2, LocalDateTime.now(), SELL, 100, 100, 1,
                 shareholder.getShareholderId(), 0, 0, 0);
@@ -239,7 +234,6 @@ public class StopLimitOrderTest {
         Trade trade = new Trade(security, 200, 50, matching, comingOrder);
         verify(eventPublisher).publish(new OrderExecutedEvent(4, 1, List.of(new TradeDTO(trade))));
         verify(eventPublisher).publish(new OrderActivatedEvent(4, 2));
-
     }
 
     @Test
@@ -369,6 +363,7 @@ public class StopLimitOrderTest {
         verify(eventPublisher).publish(new OrderActivatedEvent(3, 1));
         verify(eventPublisher).publish(new OrderActivatedEvent(3, 2));
     }
+
     @Test 
     void broker_credit_before_activate_is_correct()
     {
@@ -378,6 +373,7 @@ public class StopLimitOrderTest {
         orderHandler.handleEnterOrder(stopLimitRequest);
         assertThat(broker.getCredit()).isEqualTo(100*50);
     }
+
     @Test 
     void broker_credit_after_activate_is_correct()
     { 
@@ -398,6 +394,5 @@ public class StopLimitOrderTest {
         orderHandler.handleEnterOrder(matchingSellOrder);
         orderHandler.handleEnterOrder(stopLimitRequest);
         assertThat(broker.getCredit()).isEqualTo(100_000 - 100*45);
-
     }
 }

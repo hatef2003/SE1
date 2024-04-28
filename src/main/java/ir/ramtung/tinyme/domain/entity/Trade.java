@@ -30,6 +30,7 @@ public class Trade {
             this.sell = snapshot1;
         }
     }
+
     public int getQuantity()
     {
         return quantity;

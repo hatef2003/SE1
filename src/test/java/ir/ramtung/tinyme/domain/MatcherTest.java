@@ -148,6 +148,5 @@ public class MatcherTest {
         assertThat(security.getOrderBook().getSellQueue()).hasSize(0);
         assertThat(security.getOrderBook().getBuyQueue()).hasSize(1);
         assertThat(security.getOrderBook().getBuyQueue().get(0).getQuantity()).isEqualTo(20);
-
     }
 }

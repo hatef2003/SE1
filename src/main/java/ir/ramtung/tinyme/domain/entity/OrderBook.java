@@ -42,16 +42,9 @@ public class OrderBook {
         return null;
     }
 
-    public boolean removeByOrderId(Side side, long orderId) {
+    public void removeByOrderId(Side side, long orderId) {
         var queue = getQueue(side);
-        var it = queue.listIterator();
-        while (it.hasNext()) {
-            if (it.next().getOrderId() == orderId) {
-                it.remove();
-                return true;
-            }
-        }
-        return false;
+        queue.removeIf(order -> order.getOrderId() == orderId);
     }
 
     public Order matchWithFirst(Order newOrder) {

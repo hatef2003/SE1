@@ -68,8 +68,8 @@ public class Matcher {
             newOrder.getSecurity().getOrderBook().restoreSellOrder(it.previous().getSell());
         }
     }
-    private void rollbackSellTrades(Order newOrder , LinkedList<Trade> trades)
-    {
+
+    private void rollbackSellTrades(Order newOrder , LinkedList<Trade> trades) {
         assert newOrder.getSide() == Side.SELL;
         for (Trade trade : trades) {
             newOrder.getBroker().decreaseCreditBy((long) trade.getPrice() *trade.getQuantity());
@@ -101,5 +101,4 @@ public class Matcher {
         }
         return result;
     }
-
 }

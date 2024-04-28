@@ -164,5 +164,4 @@ class MinimumExecutionQuantityTest {
             System.out.println("Something wrong");
         }
     }
-
 }

@@ -77,6 +77,7 @@ public class Security {
             order = orderCancellationQueue.findStopLimitOrderById(updateOrderRq.getOrderId());
         if (order == null)
             throw new InvalidRequestException(Message.ORDER_ID_NOT_FOUND);
+
         validateEnterOrderRq(updateOrderRq);
         if (!(order instanceof StopLimitOrder)) {
             if (updateOrderRq.getStopLimit() != 0)
