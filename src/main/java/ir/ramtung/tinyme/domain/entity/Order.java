@@ -153,5 +153,9 @@ public class Order {
             return price<=this.price;
         }
     }
+    public int getAllQuantity()
+    {
+        return quantity;
+    }
 
 }
