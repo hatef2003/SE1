@@ -60,7 +60,7 @@ public class Security {
         StopLimitOrder stopLimitOrder = orderCancellationQueue.findStopLimitOrderById(deleteOrderRq.getOrderId());
         if (order == null && stopLimitOrder == null)
             throw new InvalidRequestException(Message.ORDER_ID_NOT_FOUND);
-        if (order != null) {
+        if (order != null) { 
             if (order.getSide() == Side.BUY)
                 order.getBroker().increaseCreditBy(order.getValue());
             orderBook.removeByOrderId(deleteOrderRq.getSide(), deleteOrderRq.getOrderId());

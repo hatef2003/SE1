@@ -140,4 +140,18 @@ public class Order {
     public int getTotalQuantity() {
         return quantity;
     }
+
+
+    public boolean canTrade(int price )
+    {
+        if(side==Side.SELL)
+        {
+            return price>= this.price ;
+        }
+        else
+        {
+            return price<=this.price;
+        }
+    }
+
 }
