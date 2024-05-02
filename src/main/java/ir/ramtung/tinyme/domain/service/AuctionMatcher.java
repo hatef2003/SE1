@@ -2,7 +2,7 @@ package ir.ramtung.tinyme.domain.service;
 
 import ir.ramtung.tinyme.domain.entity.*;
 
-import java.lang.reflect.Array;
+
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
@@ -16,22 +16,30 @@ import java.util.stream.Collectors;
 
 @Service
 public class AuctionMatcher extends Matcher {
-    private LinkedList<Trade> matchButOrder(Order buy, ArrayList<Order> sells , int price) {
+    private LinkedList<Trade> matchBuyOrder(Order buy, ArrayList<Order> sells , int price) {
+        buy.getBroker().increaseCreditBy(buy.getPrice() * buy.getQuantity());
         LinkedList<Trade>trades = new LinkedList<>();
         while (buy.getQuantity() != 0) {
             if(sells.isEmpty())
             {
+                if(buy.getQuantity()!=0)
+                {
+                    buy.getBroker().decreaseCreditBy(buy.getValue()*buy.getQuantity());
+                }
                 break;
             }
             if (sells.get(0).getQuantity() > buy.getQuantity())
             {
                 trades.add(new Trade(buy.getSecurity(), price, buy.getQuantity(), buy,sells.get(0)));
+                buy.getBroker().decreaseCreditBy(price* buy.getQuantity());
                 sells.get(0).decreaseQuantity(buy.getQuantity());
                 buy.decreaseQuantity(buy.getQuantity());
+
             }
             else
             {
                 trades.add(new Trade(buy.getSecurity(), price, sells.get(0).getQuantity(), buy,sells.get(0)));
+                buy.getBroker().decreaseCreditBy(price* sells.get(0).getQuantity());
                 buy.decreaseQuantity(sells.get(0).getQuantity());
                 sells.get(0).decreaseQuantity(sells.get(0).getQuantity());
                 sells.remove(0);
@@ -41,16 +49,21 @@ public class AuctionMatcher extends Matcher {
         return trades;
     }
 
-    public MatchResult match(Security security, int openingPrice) {
+    public MatchResult match(Security security, int openingPrice,Order newOrder) {
+        LinkedList<Trade>allTrades = new LinkedList<>() ;
         ArrayList<Order> openedSell = security.getOrderBook().getOpenedOrders(openingPrice, Side.SELL);
         ArrayList<Order> openedBuy = security.getOrderBook().getOpenedOrders(openingPrice, Side.BUY);
         for (Order buyOrder : openedBuy) {
             if (openedSell.isEmpty()) {
                 break;
             }
+            else
+            {
+                allTrades.addAll(matchBuyOrder(buyOrder,openedSell , openingPrice));   
+            }
 
         }
-        return MatchResult.notEnoughTrades();
+        return MatchResult.executed(newOrder, allTrades);
     }
 
     public int findOpeningPrice(Security security) {
@@ -77,6 +90,6 @@ public class AuctionMatcher extends Matcher {
     public MatchResult execute(Order order) {
         order.getSecurity().getOrderBook().enqueue(order);
         int openingPrice = this.findOpeningPrice(order.getSecurity());
-        return this.match(order.getSecurity(), openingPrice);
+        return this.match(order.getSecurity(), openingPrice , order);
     }
 }
