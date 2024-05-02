@@ -5,6 +5,7 @@ import lombok.Getter;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.ListIterator;
+import java.util.ArrayList;
 
 @Getter
 public class OrderBook {
@@ -84,5 +85,17 @@ public class OrderBook {
                 .filter(order -> order.getShareholder().equals(shareholder))
                 .mapToInt(Order::getTotalQuantity)
                 .sum();
+    }
+    public ArrayList<Order> getOpenedBuyOrders(int openingPrice , Side side)
+    {
+        ArrayList<Order> openOrders = new ArrayList<>();
+        for (var order: getQueue(side))
+        {
+            if (order.canTrade(openingPrice))
+            {
+                openOrders.add(order);
+            }
+        }
+        return openOrders;
     }
 }
