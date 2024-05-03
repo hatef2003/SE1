@@ -3,6 +3,7 @@ package ir.ramtung.tinyme.domain.service;
 import ir.ramtung.tinyme.domain.entity.*;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -12,6 +13,7 @@ import org.springframework.stereotype.Service;
 import java.util.stream.Stream;
 
 import java.util.stream.Collectors;
+import java.lang.Math;
 
 @Service
 public class AuctionMatcher extends Matcher {
@@ -80,19 +82,28 @@ public class AuctionMatcher extends Matcher {
         List<Integer> prices = Stream
                 .concat(security.getOrderBook().getBuyQueue().stream(), security.getOrderBook().getSellQueue().stream())
                 .map(order -> order.getPrice()).collect(Collectors.toList());
-        int maxTrade = 0;
+        int maxTrade = -1;
         int maxPrice = -1;
         for (int price : prices) {
             int openedBuyQuantity = security.getOrderBook().getOpenedOrders(price, Side.BUY).stream()
                     .mapToInt(order -> order.getAllQuantity()).sum();
-            int openedSellQuantity = security.getOrderBook().getOpenedOrders(price, Side.BUY).stream()
+            int openedSellQuantity = security.getOrderBook().getOpenedOrders(price, Side.SELL).stream()
                     .mapToInt(order -> order.getAllQuantity()).sum();
             if (min(openedBuyQuantity, openedSellQuantity) > maxTrade) {
                 maxTrade = min(openedBuyQuantity, openedSellQuantity);
                 maxPrice = price;
             }
+            if (min(openedBuyQuantity, openedSellQuantity) == maxTrade) {
+                if (Math.abs(maxPrice - security.getLastTradePrice()) > Math
+                        .abs(price - security.getLastTradePrice())) {
+                    maxPrice = price;
+                }
+                if (Math.abs(maxPrice - security.getLastTradePrice()) == Math
+                        .abs(price - security.getLastTradePrice())) {
+                    maxPrice = Math.min(maxPrice, price);
+                }
+            }  
         }
-
         return maxPrice;
     }
 

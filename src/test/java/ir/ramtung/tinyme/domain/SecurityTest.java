@@ -2,6 +2,7 @@ package ir.ramtung.tinyme.domain;
 
 import ir.ramtung.tinyme.config.MockedJMSTestConfig;
 import ir.ramtung.tinyme.domain.entity.*;
+import ir.ramtung.tinyme.domain.service.AuctionMatcher;
 import ir.ramtung.tinyme.domain.service.Matcher;
 import ir.ramtung.tinyme.messaging.exception.InvalidRequestException;
 import ir.ramtung.tinyme.messaging.request.DeleteOrderRq;
@@ -29,7 +30,8 @@ class SecurityTest {
     private List<Order> orders;
     @Autowired
     Matcher matcher;
-
+    @Autowired
+    AuctionMatcher auctionMatcher;
     @BeforeEach
     void setupOrderBook() {
         security = Security.builder().build();
@@ -188,5 +190,13 @@ class SecurityTest {
         assertThat(result.outcome()).isEqualTo(MatchingOutcome.EXECUTED);
         assertThat(result.trades()).hasSize(2);
         assertThat(result.remainder().getQuantity()).isZero();
+    }
+    @Test
+    void auction_matcher_finding_opening_price()
+    {
+        security.setLastTradePrice(15890);
+        security.getOrderBook().enqueue(new Order(50, security, BUY, 15000, 15900, broker, shareholder));
+        int a = auctionMatcher.findOpeningPrice(security);
+        assertThat(a).isEqualTo(15900);
     }
 }
