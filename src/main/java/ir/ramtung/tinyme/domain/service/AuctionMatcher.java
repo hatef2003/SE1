@@ -60,14 +60,23 @@ public class AuctionMatcher extends Matcher {
         LinkedList<Trade> allTrades = new LinkedList<>();
         ArrayList<Order> openedSell = security.getOrderBook().getOpenedOrders(openingPrice, Side.SELL);
         ArrayList<Order> openedBuy = security.getOrderBook().getOpenedOrders(openingPrice, Side.BUY);
-        for (Order buyOrder : openedBuy) {
+        while (!openedBuy.isEmpty()) {
+            Order buyOrder = openedBuy.get(0);
+            openedBuy.remove(0);
             if (openedSell.isEmpty()) {
                 break;
             } else {
                 allTrades.addAll(matchBuyOrder(buyOrder, openedSell, openingPrice));
                 if (buyOrder.getQuantity() == 0)
                     if (buyOrder instanceof IcebergOrder) {
-                        // TODO add buy at the end of opened que
+                        IcebergOrder icebergBuyOrder = (IcebergOrder) buyOrder;
+                        icebergBuyOrder.replenish();
+                        if (icebergBuyOrder.getQuantity() != 0) {
+                            openedBuy.add(icebergBuyOrder);
+                        } else {
+                            security.getOrderBook().removeByOrderId(Side.BUY, buyOrder.getOrderId());
+                        }
+
                     } else {
                         security.getOrderBook().removeByOrderId(Side.BUY, buyOrder.getOrderId());
                     }
@@ -102,7 +111,7 @@ public class AuctionMatcher extends Matcher {
                         .abs(price - security.getLastTradePrice())) {
                     maxPrice = Math.min(maxPrice, price);
                 }
-            }  
+            }
         }
         return maxPrice;
     }
