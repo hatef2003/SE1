@@ -3,7 +3,7 @@ package ir.ramtung.tinyme.domain.service;
 import ir.ramtung.tinyme.domain.entity.*;
 
 import java.util.ArrayList;
-import java.util.Collections;
+
 import java.util.LinkedList;
 import java.util.List;
 
@@ -119,7 +119,6 @@ public class AuctionMatcher extends Matcher {
     @Override
     public MatchResult execute(Order order) {
         order.getSecurity().getOrderBook().enqueue(order);
-        int openingPrice = this.findOpeningPrice(order.getSecurity());
-        return this.match(order.getSecurity(), openingPrice, order);
+        return MatchResult.executed(order,new LinkedList<>());
     }
 }

@@ -3,6 +3,7 @@ package ir.ramtung.tinyme.domain.entity;
 import ir.ramtung.tinyme.messaging.exception.InvalidRequestException;
 import ir.ramtung.tinyme.messaging.request.DeleteOrderRq;
 import ir.ramtung.tinyme.messaging.request.EnterOrderRq;
+import ir.ramtung.tinyme.messaging.request.MatchingState;
 import ir.ramtung.tinyme.domain.service.Matcher;
 import ir.ramtung.tinyme.messaging.Message;
 import lombok.Builder;
@@ -26,6 +27,8 @@ public class Security {
     private int lastTradePrice = -1;
     @Builder.Default
     private OrderCancellationQueue orderCancellationQueue = new OrderCancellationQueue();
+    @Builder.Default
+    MatchingState state = MatchingState.CONTINUOUS;
 
     public MatchResult newOrder(EnterOrderRq enterOrderRq, Broker broker, Shareholder shareholder, Matcher matcher) {
         if (!requestHasEnoughPositions(enterOrderRq, shareholder,
@@ -60,7 +63,7 @@ public class Security {
         StopLimitOrder stopLimitOrder = orderCancellationQueue.findStopLimitOrderById(deleteOrderRq.getOrderId());
         if (order == null && stopLimitOrder == null)
             throw new InvalidRequestException(Message.ORDER_ID_NOT_FOUND);
-        if (order != null) { 
+        if (order != null) {
             if (order.getSide() == Side.BUY)
                 order.getBroker().increaseCreditBy(order.getValue());
             orderBook.removeByOrderId(deleteOrderRq.getSide(), deleteOrderRq.getOrderId());
@@ -187,5 +190,10 @@ public class Security {
 
     public void setLastTradePrice(int price) {
         lastTradePrice = price;
+    }
+    // TODO public void change state and it get matcher and return suitable trades :)
+    public void changeMatchingStateRq(MatchingState targetState)
+    {
+        this.state = targetState; 
     }
 }
