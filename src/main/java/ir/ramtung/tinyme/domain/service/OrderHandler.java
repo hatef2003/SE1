@@ -6,8 +6,10 @@ import ir.ramtung.tinyme.messaging.exception.InvalidRequestException;
 import ir.ramtung.tinyme.messaging.EventPublisher;
 import ir.ramtung.tinyme.messaging.TradeDTO;
 import ir.ramtung.tinyme.messaging.event.*;
+import ir.ramtung.tinyme.messaging.request.ChangeMatchingStateRq;
 import ir.ramtung.tinyme.messaging.request.DeleteOrderRq;
 import ir.ramtung.tinyme.messaging.request.EnterOrderRq;
+import ir.ramtung.tinyme.messaging.request.MatchingState;
 import ir.ramtung.tinyme.messaging.request.OrderEntryType;
 import ir.ramtung.tinyme.repository.BrokerRepository;
 import ir.ramtung.tinyme.repository.SecurityRepository;
@@ -26,7 +28,7 @@ public class OrderHandler {
     ShareholderRepository shareholderRepository;
     EventPublisher eventPublisher;
     Matcher matcher;
-
+    AuctionMatcher auctionMatcher;
     public OrderHandler(SecurityRepository securityRepository, BrokerRepository brokerRepository,
             ShareholderRepository shareholderRepository, EventPublisher eventPublisher, Matcher matcher) {
         this.securityRepository = securityRepository;
@@ -111,6 +113,14 @@ public class OrderHandler {
         } catch (InvalidRequestException ex) {
             eventPublisher.publish(
                     new OrderRejectedEvent(deleteOrderRq.getRequestId(), deleteOrderRq.getOrderId(), ex.getReasons()));
+        }
+    }
+    public void handleChangeMatchingStateRq(ChangeMatchingStateRq changeMatchingStateRq)
+    {
+        Security security = securityRepository.findSecurityByIsin(changeMatchingStateRq.getSecurityIsin());
+        if (security.getState()==MatchingState.AUCTION)
+        {
+            
         }
     }
 

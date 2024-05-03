@@ -56,8 +56,8 @@ public class AuctionMatcher extends Matcher {
         return trades;
     }
 
-    public MatchResult match(Security security, int openingPrice, Order newOrder) {
-        LinkedList<Trade> allTrades = new LinkedList<>();
+    public LinkedList<Trade> match(Security security, int openingPrice) {
+        LinkedList<Trade> trades = new LinkedList<>();
         ArrayList<Order> openedSell = security.getOrderBook().getOpenedOrders(openingPrice, Side.SELL);
         ArrayList<Order> openedBuy = security.getOrderBook().getOpenedOrders(openingPrice, Side.BUY);
         while (!openedBuy.isEmpty()) {
@@ -66,7 +66,7 @@ public class AuctionMatcher extends Matcher {
             if (openedSell.isEmpty()) {
                 break;
             } else {
-                allTrades.addAll(matchBuyOrder(buyOrder, openedSell, openingPrice));
+                trades.addAll(matchBuyOrder(buyOrder, openedSell, openingPrice));
                 if (buyOrder.getQuantity() == 0)
                     if (buyOrder instanceof IcebergOrder) {
                         IcebergOrder icebergBuyOrder = (IcebergOrder) buyOrder;
@@ -84,7 +84,7 @@ public class AuctionMatcher extends Matcher {
             }
 
         }
-        return MatchResult.executed(newOrder, allTrades);
+        return trades;
     }
 
     public int findOpeningPrice(Security security) {
@@ -120,5 +120,10 @@ public class AuctionMatcher extends Matcher {
     public MatchResult execute(Order order) {
         order.getSecurity().getOrderBook().enqueue(order);
         return MatchResult.executed(order,new LinkedList<>());
+    }
+    public LinkedList<Trade> open(Security security)
+    {
+        int openingPrice = this.findOpeningPrice(security);
+        return this.match(security, openingPrice);  
     }
 }

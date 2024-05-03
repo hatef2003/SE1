@@ -1,12 +1,13 @@
 package ir.ramtung.tinyme.messaging.request;
 
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
 public class ChangeMatchingStateRq {
     String securityIsin;
-    MatchingState targetState ;
-    public ChangeMatchingStateRq(String securityIsin, MatchingState targetState)
-    {
-        this.securityIsin= securityIsin;
-        this.targetState = targetState;
-    }
-    
+    MatchingState targetState;
 }
