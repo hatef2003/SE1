@@ -71,10 +71,13 @@ public class OrderHandler {
                     List.of(Message.TRADE_QUANTITY_LESS_THAN_MINIMUM)));
     }
 
-    private void publishExecutedOrderEvents(EnterOrderRq enterOrderRq, MatchResult matchResult) {
-        if (enterOrderRq.getRequestType() == OrderEntryType.NEW_ORDER)
+    private void publishExecutedOrderEvents(EnterOrderRq enterOrderRq, MatchResult matchResult, Security security) {
+        if (enterOrderRq.getRequestType() == OrderEntryType.NEW_ORDER) {
             eventPublisher.publish(new OrderAcceptedEvent(enterOrderRq.getRequestId(), enterOrderRq.getOrderId()));
-        else
+            if (security.getState() == MatchingState.AUCTION) {
+                publishOpenPriceEvent(security);
+            }
+        } else
             eventPublisher.publish(new OrderUpdatedEvent(enterOrderRq.getRequestId(), enterOrderRq.getOrderId()));
         if (!matchResult.trades().isEmpty())
             eventPublisher.publish(new OrderExecutedEvent(enterOrderRq.getRequestId(), enterOrderRq.getOrderId(),
@@ -98,7 +101,7 @@ public class OrderHandler {
                 matchResult = security.updateOrder(enterOrderRq, securityMatcher);
 
             if (matchResult.outcome() == MatchingOutcome.EXECUTED) {
-                publishExecutedOrderEvents(enterOrderRq, matchResult);
+                publishExecutedOrderEvents(enterOrderRq, matchResult, security);
                 activateStopLimitOrders(security, enterOrderRq.getRequestId());
             } else
                 publishMatchError(matchResult.outcome(), enterOrderRq);
@@ -139,6 +142,8 @@ public class OrderHandler {
             LinkedList<Trade> trades = auctionMatcher.open(security);
             publishTradeEvent(trades);
         }
+        //TODO i have no idea that what is the request id 
+        this.activateStopLimitOrders(security,changeMatchingStateRq.getRequestId());
         security.changeMatchingStateRq(changeMatchingStateRq.getTargetState());
     }
 

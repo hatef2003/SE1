@@ -10,4 +10,5 @@ import lombok.NoArgsConstructor;
 public class ChangeMatchingStateRq {
     String securityIsin;
     MatchingState targetState;
+    int requestId;
 }

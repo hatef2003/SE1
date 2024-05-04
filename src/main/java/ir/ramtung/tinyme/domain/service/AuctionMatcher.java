@@ -140,6 +140,7 @@ public class AuctionMatcher extends Matcher {
             trade.getSell().getShareholder().decPosition(security, trade.getQuantity());
             trade.getBuy().getShareholder().incPosition(security, trade.getQuantity());
         }
+        security.setLastTradePrice(openingPrice);
         return trades;
     }
 }
