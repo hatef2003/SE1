@@ -191,7 +191,6 @@ public class Security {
     public void setLastTradePrice(int price) {
         lastTradePrice = price;
     }
-    // TODO public void change state and it get matcher and return suitable trades :)
     public void changeMatchingStateRq(MatchingState targetState)
     {
         this.state = targetState; 

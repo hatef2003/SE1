@@ -29,6 +29,7 @@ public class OrderHandler {
     EventPublisher eventPublisher;
     Matcher matcher;
     AuctionMatcher auctionMatcher;
+
     public OrderHandler(SecurityRepository securityRepository, BrokerRepository brokerRepository,
             ShareholderRepository shareholderRepository, EventPublisher eventPublisher, Matcher matcher) {
         this.securityRepository = securityRepository;
@@ -39,7 +40,8 @@ public class OrderHandler {
     }
 
     private void activateStopLimitOrders(Security security, long request_id) {
-        ArrayList<StopLimitOrder> activatedList = security.getOrderCancellationQueue().getActivatedOrder(security.getLastTradePrice());
+        ArrayList<StopLimitOrder> activatedList = security.getOrderCancellationQueue()
+                .getActivatedOrder(security.getLastTradePrice());
         for (int i = 0; i < activatedList.size(); i++) {
             StopLimitOrder stopLimitOrder = activatedList.get(i);
             stopLimitOrder.restoreBrokerCredit();
@@ -51,7 +53,8 @@ public class OrderHandler {
                         result.trades().stream().map(TradeDTO::new).collect(Collectors.toList())));
                 int lastTradePrice = result.trades().get(result.trades().size() - 1).getPrice();
                 newOrder.getSecurity().setLastTradePrice(lastTradePrice);
-                activatedList.addAll(security.getOrderCancellationQueue().getActivatedOrder(security.getLastTradePrice()));
+                activatedList
+                        .addAll(security.getOrderCancellationQueue().getActivatedOrder(security.getLastTradePrice()));
             }
         }
     }
@@ -68,11 +71,10 @@ public class OrderHandler {
                     List.of(Message.TRADE_QUANTITY_LESS_THAN_MINIMUM)));
     }
 
-    private void publishExecutedOrderEvents(EnterOrderRq enterOrderRq , MatchResult matchResult)
-    {
+    private void publishExecutedOrderEvents(EnterOrderRq enterOrderRq, MatchResult matchResult) {
         if (enterOrderRq.getRequestType() == OrderEntryType.NEW_ORDER)
             eventPublisher.publish(new OrderAcceptedEvent(enterOrderRq.getRequestId(), enterOrderRq.getOrderId()));
-        else 
+        else
             eventPublisher.publish(new OrderUpdatedEvent(enterOrderRq.getRequestId(), enterOrderRq.getOrderId()));
         if (!matchResult.trades().isEmpty())
             eventPublisher.publish(new OrderExecutedEvent(enterOrderRq.getRequestId(), enterOrderRq.getOrderId(),
@@ -115,13 +117,16 @@ public class OrderHandler {
                     new OrderRejectedEvent(deleteOrderRq.getRequestId(), deleteOrderRq.getOrderId(), ex.getReasons()));
         }
     }
-    public void handleChangeMatchingStateRq(ChangeMatchingStateRq changeMatchingStateRq)
-    {
+
+    public void handleChangeMatchingStateRq(ChangeMatchingStateRq changeMatchingStateRq) {
         Security security = securityRepository.findSecurityByIsin(changeMatchingStateRq.getSecurityIsin());
-        if (security.getState()==MatchingState.AUCTION)
-        {
-            
+        if (security.getState() == MatchingState.AUCTION) {
+            LinkedList<Trade> trades = auctionMatcher.open(security);
+            for (Trade trade : trades) {
+                eventPublisher.publish(new TradeEvent(trade));
+            }
         }
+        security.changeMatchingStateRq(changeMatchingStateRq.getTargetState());
     }
 
     private void validateEnterOrderRq(EnterOrderRq enterOrderRq) throws InvalidRequestException {
