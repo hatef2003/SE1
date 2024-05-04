@@ -157,6 +157,10 @@ public class Security {
             throw new InvalidRequestException(Message.STOP_LIMIT_ORDER_HAS_MINIMUM_EXECUTION_QUANTITY);
         if (enterOrderRq.getPeakSize() != 0 && enterOrderRq.getQuantity() < enterOrderRq.getPeakSize())
             throw new InvalidRequestException(Message.PEAK_SIZE_MUST_BE_LESS_THAN_TOTAL_QUANTITY);
+        if(state == MatchingState.AUCTION && enterOrderRq.getStopLimit() !=0)
+            throw new InvalidRequestException(Message.INVALID_STOP_LIMIT_DURING_AUCTION_MATCHING);
+        if(state == MatchingState.AUCTION && enterOrderRq.getMinimumExecutionQuantity()!=0)
+            throw new InvalidRequestException(Message.INVALID_MINIMUM_EXECUTION_QUANTITY_DURING_AUCTION_MATCHING);
     }
 
     private MatchResult matchNewOrder(Order order, Matcher matcher) {
@@ -191,8 +195,8 @@ public class Security {
     public void setLastTradePrice(int price) {
         lastTradePrice = price;
     }
-    public void changeMatchingStateRq(MatchingState targetState)
-    {
-        this.state = targetState; 
+
+    public void changeMatchingStateRq(MatchingState targetState) {
+        this.state = targetState;
     }
 }

@@ -21,5 +21,8 @@ public class Message {
     public static final String INVALID_PRICE = "Price must be positive";
     public static final String INVALID_STOP_LIMIT = "Stop Limit must be positive";
     public static final String PEAK_SIZE_MUST_BE_LESS_THAN_TOTAL_QUANTITY = "Peak size must be less than total quantity";
+    public static final String INVALID_STOP_LIMIT_DURING_AUCTION_MATCHING = "Its not possible to enter stop limit order during auction matching";
+    public static final String INVALID_MINIMUM_EXECUTION_QUANTITY_DURING_AUCTION_MATCHING = "Its not possible to enter order with minimum execution quantity  during auction matching";
+    
 
 }
