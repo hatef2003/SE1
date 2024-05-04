@@ -122,16 +122,23 @@ public class AuctionMatcher extends Matcher {
             return MatchResult.notEnoughCredit();
         order.getBroker().decreaseCreditBy(order.getValue());
         order.getSecurity().getOrderBook().enqueue(order);
-        return MatchResult.executed(order,new LinkedList<>());
+        return MatchResult.executed(order, new LinkedList<>());
     }
-    public LinkedList<Trade> open(Security security)
-    {
+
+    public int getTradeAbleQuantity(int price, Security security) {
+        int openedBuyQuantity = security.getOrderBook().getOpenedOrders(price, Side.BUY).stream()
+                .mapToInt(order -> order.getAllQuantity()).sum();
+        int openedSellQuantity = security.getOrderBook().getOpenedOrders(price, Side.SELL).stream()
+                .mapToInt(order -> order.getAllQuantity()).sum();
+        return Math.min(openedSellQuantity, openedBuyQuantity);
+    }
+
+    public LinkedList<Trade> open(Security security) {
         int openingPrice = this.findOpeningPrice(security);
         LinkedList<Trade> trades = this.match(security, openingPrice);
-        for (Trade trade : trades)
-        {
+        for (Trade trade : trades) {
             trade.getSell().getShareholder().decPosition(security, trade.getQuantity());
-            trade.getBuy().getShareholder().incPosition(security,trade.getQuantity());
+            trade.getBuy().getShareholder().incPosition(security, trade.getQuantity());
         }
         return trades;
     }

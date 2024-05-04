@@ -9,7 +9,7 @@ import lombok.NoArgsConstructor;
 @EqualsAndHashCode(callSuper = false)
 @AllArgsConstructor
 @NoArgsConstructor
-public class OpeningPriceEvent {
+public class OpeningPriceEvent extends Event {
     String securityIsin ;
     int openingPrice;
     int tradeableQuantity;

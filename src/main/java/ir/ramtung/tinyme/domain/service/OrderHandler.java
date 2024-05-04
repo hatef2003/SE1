@@ -83,17 +83,19 @@ public class OrderHandler {
 
     public void handleEnterOrder(EnterOrderRq enterOrderRq) {
         try {
+
             validateEnterOrderRq(enterOrderRq);
 
             Security security = securityRepository.findSecurityByIsin(enterOrderRq.getSecurityIsin());
+            Matcher securityMatcher = (security.getState() == MatchingState.AUCTION) ? auctionMatcher : matcher;
             Broker broker = brokerRepository.findBrokerById(enterOrderRq.getBrokerId());
             Shareholder shareholder = shareholderRepository.findShareholderById(enterOrderRq.getShareholderId());
 
             MatchResult matchResult;
             if (enterOrderRq.getRequestType() == OrderEntryType.NEW_ORDER)
-                matchResult = security.newOrder(enterOrderRq, broker, shareholder, matcher);
+                matchResult = security.newOrder(enterOrderRq, broker, shareholder, securityMatcher);
             else
-                matchResult = security.updateOrder(enterOrderRq, matcher);
+                matchResult = security.updateOrder(enterOrderRq, securityMatcher);
 
             if (matchResult.outcome() == MatchingOutcome.EXECUTED) {
                 publishExecutedOrderEvents(enterOrderRq, matchResult);
@@ -118,13 +120,24 @@ public class OrderHandler {
         }
     }
 
+    private void publishOpenPriceEvent(Security security) {
+        int openingPrice = auctionMatcher.findOpeningPrice(security);
+        int tradeableQuantity = auctionMatcher.getTradeAbleQuantity(openingPrice, security);
+        eventPublisher.publish(new OpeningPriceEvent(security.getIsin(), openingPrice, tradeableQuantity));
+    }
+
+    private void publishTradeEvent(LinkedList<Trade> trades) {
+        for (Trade trade : trades) {
+            eventPublisher.publish(new TradeEvent(trade));
+        }
+    }
+
     public void handleChangeMatchingStateRq(ChangeMatchingStateRq changeMatchingStateRq) {
         Security security = securityRepository.findSecurityByIsin(changeMatchingStateRq.getSecurityIsin());
         if (security.getState() == MatchingState.AUCTION) {
+            publishOpenPriceEvent(security);
             LinkedList<Trade> trades = auctionMatcher.open(security);
-            for (Trade trade : trades) {
-                eventPublisher.publish(new TradeEvent(trade));
-            }
+            publishTradeEvent(trades);
         }
         security.changeMatchingStateRq(changeMatchingStateRq.getTargetState());
     }
