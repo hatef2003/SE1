@@ -125,14 +125,13 @@ public class OrderHandler {
 
     private void publishOpenPriceEvent(Security security) {
         int openingPrice = auctionMatcher.findOpeningPrice(security);
-        int tradeableQuantity = auctionMatcher.getTradeAbleQuantity(openingPrice, security);
-        eventPublisher.publish(new OpeningPriceEvent(security.getIsin(), openingPrice, tradeableQuantity));
+        int tradableQuantity = auctionMatcher.getTradeAbleQuantity(openingPrice, security);
+        eventPublisher.publish(new OpeningPriceEvent(security.getIsin(), openingPrice, tradableQuantity));
     }
 
     private void publishTradeEvent(LinkedList<Trade> trades) {
-        for (Trade trade : trades) {
+        for (Trade trade : trades)
             eventPublisher.publish(new TradeEvent(trade));
-        }
     }
 
     public void handleChangeMatchingStateRq(ChangeMatchingStateRq changeMatchingStateRq) {
@@ -142,7 +141,6 @@ public class OrderHandler {
             LinkedList<Trade> trades = auctionMatcher.open(security);
             publishTradeEvent(trades);
         }
-        //TODO i have no idea that what is the request id 
         this.activateStopLimitOrders(security,changeMatchingStateRq.getRequestId());
         security.changeMatchingStateRq(changeMatchingStateRq.getTargetState());
     }
