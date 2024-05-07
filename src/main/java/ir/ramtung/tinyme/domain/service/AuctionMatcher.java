@@ -30,7 +30,8 @@ public class AuctionMatcher extends Matcher {
                 buyOrder.decreaseQuantity(buyOrder.getQuantity());
                 buyOrder.getSecurity().getOrderBook().removeByOrderId(Side.BUY, buyOrder.getOrderId());
             } else {
-                trades.add(new Trade(buyOrder.getSecurity(), price, sells.get(0).getQuantity(), buyOrder, sells.get(0)));
+                trades.add(
+                        new Trade(buyOrder.getSecurity(), price, sells.get(0).getQuantity(), buyOrder, sells.get(0)));
                 buyOrder.getBroker().decreaseCreditBy(price * sells.get(0).getQuantity());
                 buyOrder.decreaseQuantity(sells.get(0).getQuantity());
                 sells.get(0).decreaseQuantity(sells.get(0).getQuantity());
@@ -68,7 +69,12 @@ public class AuctionMatcher extends Matcher {
                             security.getOrderBook().removeByOrderId(Side.BUY, buyOrder.getOrderId());
                     } else
                         security.getOrderBook().removeByOrderId(Side.BUY, buyOrder.getOrderId());
-            }
+                else
+                {
+                    break;
+                }
+                    }
+
 
         }
         return trades;
@@ -125,7 +131,8 @@ public class AuctionMatcher extends Matcher {
             trade.getSell().getShareholder().decPosition(security, trade.getQuantity());
             trade.getBuy().getShareholder().incPosition(security, trade.getQuantity());
         }
-        security.setLastTradePrice(openingPrice);
+        if (!trades.isEmpty())
+            security.setLastTradePrice(openingPrice);
         return trades;
     }
 }

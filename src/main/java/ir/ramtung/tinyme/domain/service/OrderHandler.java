@@ -140,8 +140,9 @@ public class OrderHandler {
             publishOpenPriceEvent(security);
             LinkedList<Trade> trades = auctionMatcher.open(security);
             publishTradeEvent(trades);
+            if (!trades.isEmpty())  
+                this.activateStopLimitOrders(security, changeMatchingStateRq.getRequestId());
         }
-        this.activateStopLimitOrders(security,changeMatchingStateRq.getRequestId());
         security.changeMatchingStateRq(changeMatchingStateRq.getTargetState());
     }
 
