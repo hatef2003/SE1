@@ -2,14 +2,17 @@ package ir.ramtung.tinyme.domain;
 
 import ir.ramtung.tinyme.config.MockedJMSTestConfig;
 import ir.ramtung.tinyme.domain.entity.*;
+import ir.ramtung.tinyme.domain.service.AuctionMatcher;
 import ir.ramtung.tinyme.domain.service.Matcher;
 import ir.ramtung.tinyme.domain.service.OrderHandler;
 import ir.ramtung.tinyme.messaging.EventPublisher;
 import ir.ramtung.tinyme.messaging.Message;
 import ir.ramtung.tinyme.messaging.TradeDTO;
 import ir.ramtung.tinyme.messaging.event.*;
+import ir.ramtung.tinyme.messaging.request.ChangeMatchingStateRq;
 import ir.ramtung.tinyme.messaging.request.DeleteOrderRq;
 import ir.ramtung.tinyme.messaging.request.EnterOrderRq;
+import ir.ramtung.tinyme.messaging.request.MatchingState;
 import ir.ramtung.tinyme.repository.BrokerRepository;
 import ir.ramtung.tinyme.repository.SecurityRepository;
 import ir.ramtung.tinyme.repository.ShareholderRepository;
@@ -26,6 +29,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.mockito.Mockito.*;
 
 @SpringBootTest
@@ -588,6 +592,37 @@ public class OrderHandlerTest {
         EnterOrderRq o2 = EnterOrderRq.createNewOrderRq(1,"ABC",60,LocalDateTime.now(),Side.SELL,100000,1,1,shareholder
                 .getShareholderId() , 0);
         orderHandler.handleEnterOrder(o2);
+    }
 
+    @Test
+    void shifting_between_matching_states_does_not_change_results() {
+        assertThatNoException().isThrownBy(() -> orderHandler.handleChangeMatchingStateRq(
+                new ChangeMatchingStateRq(security.getIsin(), MatchingState.AUCTION, 1)));
+        assertThatNoException().isThrownBy(() -> orderHandler.handleChangeMatchingStateRq(
+                new ChangeMatchingStateRq(security.getIsin(), MatchingState.CONTINUOUS, 2)));
+
+        Order matchingBuyOrder1 = new Order(100, security, Side.BUY, 300, 15500, broker1, shareholder);
+        Order matchingBuyOrder2 = new Order(110, security, Side.BUY, 300, 15500, broker1, shareholder);
+        Order incomingSellOrder = new Order(200, security, Side.SELL, 1000, 15450, broker2, shareholder);
+        security.getOrderBook().enqueue(matchingBuyOrder1);
+        security.getOrderBook().enqueue(matchingBuyOrder2);
+
+        orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(1,
+                incomingSellOrder.getSecurity().getIsin(),
+                incomingSellOrder.getOrderId(),
+                incomingSellOrder.getEntryTime(),
+                incomingSellOrder.getSide(),
+                incomingSellOrder.getTotalQuantity(),
+                incomingSellOrder.getPrice(),
+                incomingSellOrder.getBroker().getBrokerId(),
+                incomingSellOrder.getShareholder().getShareholderId(), 0));
+
+        Trade trade1 = new Trade(security, matchingBuyOrder1.getPrice(), matchingBuyOrder1.getQuantity(),
+                matchingBuyOrder1, incomingSellOrder);
+        Trade trade2 = new Trade(security, matchingBuyOrder2.getPrice(), matchingBuyOrder2.getQuantity(),
+                matchingBuyOrder2, incomingSellOrder.snapshotWithQuantity(700));
+        verify(eventPublisher).publish(new OrderAcceptedEvent(1, 200));
+        verify(eventPublisher)
+                .publish(new OrderExecutedEvent(1, 200, List.of(new TradeDTO(trade1), new TradeDTO(trade2))));
     }
 }

@@ -37,8 +37,8 @@ public class OrderHandler {
         this.shareholderRepository = shareholderRepository;
         this.eventPublisher = eventPublisher;
         this.matcher = matcher;
+        this.auctionMatcher = new AuctionMatcher();
     }
-
     private void activateStopLimitOrders(Security security, long request_id) {
         ArrayList<StopLimitOrder> activatedList = security.getOrderCancellationQueue()
                 .getActivatedOrder(security.getLastTradePrice());
@@ -134,8 +134,11 @@ public class OrderHandler {
             eventPublisher.publish(new TradeEvent(trade));
     }
 
-    public void handleChangeMatchingStateRq(ChangeMatchingStateRq changeMatchingStateRq) {
+    public void handleChangeMatchingStateRq(ChangeMatchingStateRq changeMatchingStateRq) throws InvalidRequestException {
         Security security = securityRepository.findSecurityByIsin(changeMatchingStateRq.getSecurityIsin());
+        if (security == null)
+            throw new InvalidRequestException(Message.UNKNOWN_SECURITY_ISIN);
+
         if (security.getState() == MatchingState.AUCTION) {
             publishOpenPriceEvent(security);
             LinkedList<Trade> trades = auctionMatcher.open(security);
