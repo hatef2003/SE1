@@ -20,6 +20,7 @@ import org.springframework.test.annotation.DirtiesContext;
 import java.util.Arrays;
 import java.util.List;
 
+import static ir.ramtung.tinyme.domain.entity.Side.BUY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 
@@ -113,7 +114,10 @@ public class AuctionMatcherTest {
     }
 
     @Test
-    void auction_matcher_matched_with_one_trade2() {
+    void auction_matcher_matches_one_trade() {
+        shareholder.incPosition(security,100_000_000);
+        broker.increaseCreditBy(100_000_000);
+
         security.setLastTradePrice(15450);
         List<Order> orders = Arrays.asList(
                 new Order(1, security, Side.BUY, 304, 15700, broker, shareholder),
@@ -128,10 +132,11 @@ public class AuctionMatcherTest {
                 new Order(10, security, Side.SELL, 65, 15820, broker, shareholder)
         );
         orders.forEach(order -> security.getOrderBook().enqueue(order));
-        int openingPrice = auctionMatcher.findOpeningPrice(security);
-//         auctionMatcher.match()
-        assertThat(openingPrice).isEqualTo(15490);
-        assertThat(auctionMatcher.getTradableQuantity(15490 , security)).isEqualTo(285);
-        System.out.println(broker.getCredit());
+
+        var result = auctionMatcher.open(security);
+        Trade supposedTrade = new Trade(security, 15490, 285, orders.get(0), orders.get(6));
+
+        assertThat(result.size()).isEqualTo(1);
+        assertThat(result).containsExactly(supposedTrade);
     }
 }
