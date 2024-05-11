@@ -15,7 +15,6 @@ import ir.ramtung.tinyme.repository.SecurityRepository;
 import ir.ramtung.tinyme.repository.ShareholderRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
@@ -25,11 +24,9 @@ import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
 
-import static ir.ramtung.tinyme.domain.entity.Side.BUY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.verify;
 
@@ -210,4 +207,51 @@ public class AuctionMatcherTest {
         verify(eventPublisher).publish(new TradeEvent(security.getIsin(), 15490, 285, 1, 7));
         verify(eventPublisher, atLeast(2)).publish(new SecurityStateChangedEvent(security.getIsin(), MatchingState.AUCTION));
     }
+
+    @Test
+    void order_handler_changes_from_auction_to_continuous_with_trades_correctly() {
+        shareholder.incPosition(security,100_000_000);
+        broker.increaseCreditBy(10_000_000);
+        orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(1, security.getIsin(), 1, LocalDateTime.now(), Side.BUY, 304, 15700, broker.getBrokerId(), shareholder.getShareholderId(), 0));
+        orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(2, security.getIsin(), 2, LocalDateTime.now(), Side.BUY, 43, 15500, broker.getBrokerId(), shareholder.getShareholderId(), 0));
+        orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(7, security.getIsin(), 7, LocalDateTime.now(), Side.SELL, 285, 15490, broker.getBrokerId(), shareholder.getShareholderId(), 0));
+
+        assertThatNoException().isThrownBy(() -> orderHandler.handleChangeMatchingStateRq(new ChangeMatchingStateRq(1, security.getIsin(), MatchingState.CONTINUOUS)));
+
+        verify(eventPublisher).publish(new OpeningPriceEvent(security.getIsin(), 15700, 0));
+        verify(eventPublisher).publish(new OpeningPriceEvent(security.getIsin(), 15500, 0));
+        verify(eventPublisher).publish(new OpeningPriceEvent(security.getIsin(), 15490, 285));
+        verify(eventPublisher).publish(new OrderAcceptedEvent(1,1));
+        verify(eventPublisher).publish(new OrderAcceptedEvent(2,2));
+        verify(eventPublisher).publish(new OrderAcceptedEvent(7,7));
+        verify(eventPublisher).publish(new TradeEvent(security.getIsin(), 15490, 285, 1, 7));
+        verify(eventPublisher).publish(new SecurityStateChangedEvent(security.getIsin(), MatchingState.AUCTION));
+        verify(eventPublisher).publish(new SecurityStateChangedEvent(security.getIsin(), MatchingState.CONTINUOUS));
+    }
+
+    @Test
+    void auction_with_iceberg() {
+        shareholder.incPosition(security,100_000_000);
+        broker.increaseCreditBy(20_000_000);
+        orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(1, security.getIsin(), 1, LocalDateTime.now(), Side.BUY, 304, 15700, broker.getBrokerId(), shareholder.getShareholderId(), 0));
+        orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(2, security.getIsin(), 2, LocalDateTime.now(), Side.BUY, 43, 15500, broker.getBrokerId(), shareholder.getShareholderId(), 0));
+        orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(7, security.getIsin(), 7, LocalDateTime.now(), Side.SELL, 85, 15490, broker.getBrokerId(), shareholder.getShareholderId(), 0));
+        orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(8, security.getIsin(), 8, LocalDateTime.now(), Side.SELL, 300, 15580, broker.getBrokerId(), shareholder.getShareholderId(), 100));
+
+        assertThatNoException().isThrownBy(() -> orderHandler.handleChangeMatchingStateRq(new ChangeMatchingStateRq(1, security.getIsin(), MatchingState.CONTINUOUS)));
+
+        verify(eventPublisher).publish(new OpeningPriceEvent(security.getIsin(), 15700, 0));
+        verify(eventPublisher).publish(new OpeningPriceEvent(security.getIsin(), 15500, 0));
+        verify(eventPublisher).publish(new OpeningPriceEvent(security.getIsin(), 15490, 85));
+        verify(eventPublisher).publish(new OpeningPriceEvent(security.getIsin(), 15580, 304));
+
+        verify(eventPublisher).publish(new OrderAcceptedEvent(1,1));
+        verify(eventPublisher).publish(new OrderAcceptedEvent(2,2));
+        verify(eventPublisher).publish(new OrderAcceptedEvent(7,7));
+        verify(eventPublisher).publish(new OrderAcceptedEvent(8,8));
+        verify(eventPublisher, atLeast(2)).publish(new TradeEvent(security.getIsin(), 15580, 100, 1, 8));
+        verify(eventPublisher).publish(new SecurityStateChangedEvent(security.getIsin(), MatchingState.AUCTION));
+        verify(eventPublisher).publish(new SecurityStateChangedEvent(security.getIsin(), MatchingState.CONTINUOUS));
+    }
+
 }
