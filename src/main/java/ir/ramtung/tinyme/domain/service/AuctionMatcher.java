@@ -31,8 +31,7 @@ public class AuctionMatcher extends Matcher {
         ArrayList<Order> openedSell = security.getOrderBook().getOpenOrders(openingPrice, Side.SELL);
         ArrayList<Order> openedBuy = security.getOrderBook().getOpenOrders(openingPrice, Side.BUY);
         while (!openedBuy.isEmpty()) {
-            Order buyOrder = openedBuy.get(0);
-            openedBuy.remove(0);
+            Order buyOrder = openedBuy.remove(0);
             if (!openedSell.isEmpty()) {
                 trades.addAll(matchBuyOrder(buyOrder, openedSell, openingPrice));
                 if (buyOrder.getQuantity() == 0)
