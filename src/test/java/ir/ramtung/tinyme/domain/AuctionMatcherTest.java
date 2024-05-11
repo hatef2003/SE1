@@ -133,8 +133,8 @@ public class AuctionMatcherTest {
         );
         orders.forEach(order -> security.getOrderBook().enqueue(order));
 
-        var result = auctionMatcher.open(security);
         Trade supposedTrade = new Trade(security, 15490, 285, orders.get(0), orders.get(6));
+        var result = auctionMatcher.open(security);
 
         assertThat(result.size()).isEqualTo(1);
         assertThat(result).containsExactly(supposedTrade);
