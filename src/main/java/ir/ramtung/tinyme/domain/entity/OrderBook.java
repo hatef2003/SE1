@@ -86,17 +86,13 @@ public class OrderBook {
                 .mapToInt(Order::getTotalQuantity)
                 .sum();
     }
-    public ArrayList<Order> getOpenedOrders(int openingPrice , Side side)
+
+    public ArrayList<Order> getOpenOrders(int openingPrice, Side side)
     {
         ArrayList<Order> openOrders = new ArrayList<>();
-        for (var order: getQueue(side))
-        {
+        for (Order order: getQueue(side))
             if (order.canTrade(openingPrice))
-            {
                 openOrders.add(order);
-            }
-        }
         return openOrders;
     }
-
 }

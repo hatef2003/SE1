@@ -109,11 +109,10 @@ public class Order {
     }
 
     public boolean queuesBefore(Order order) {
-        if (order.getSide() == Side.BUY) {
+        if (order.getSide() == Side.BUY)
             return price > order.getPrice();
-        } else {
+        else
             return price < order.getPrice();
-        }
     }
 
     public void queue() {
@@ -141,21 +140,15 @@ public class Order {
         return quantity;
     }
 
-
-    public boolean canTrade(int price )
+    public boolean canTrade(int price)
     {
         if(side==Side.SELL)
-        {
             return price>= this.price ;
-        }
         else
-        {
             return price<=this.price;
-        }
     }
     public int getAllQuantity()
     {
         return quantity;
     }
-
 }

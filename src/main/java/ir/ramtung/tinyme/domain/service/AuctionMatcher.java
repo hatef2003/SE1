@@ -51,14 +51,12 @@ public class AuctionMatcher extends Matcher {
 
     public LinkedList<Trade> match(Security security, int openingPrice) {
         LinkedList<Trade> trades = new LinkedList<>();
-        ArrayList<Order> openedSell = security.getOrderBook().getOpenedOrders(openingPrice, Side.SELL);
-        ArrayList<Order> openedBuy = security.getOrderBook().getOpenedOrders(openingPrice, Side.BUY);
+        ArrayList<Order> openedSell = security.getOrderBook().getOpenOrders(openingPrice, Side.SELL);
+        ArrayList<Order> openedBuy = security.getOrderBook().getOpenOrders(openingPrice, Side.BUY);
         while (!openedBuy.isEmpty()) {
             Order buyOrder = openedBuy.get(0);
             openedBuy.remove(0);
-            if (openedSell.isEmpty()) {
-                break;
-            } else {
+            if (!openedSell.isEmpty()) {
                 trades.addAll(matchBuyOrder(buyOrder, openedSell, openingPrice));
                 if (buyOrder.getQuantity() == 0)
                     if (buyOrder instanceof IcebergOrder icebergBuyOrder) {
@@ -70,12 +68,9 @@ public class AuctionMatcher extends Matcher {
                     } else
                         security.getOrderBook().removeByOrderId(Side.BUY, buyOrder.getOrderId());
                 else
-                {
                     break;
-                }
-                    }
-
-
+            } else
+                break;
         }
         return trades;
     }
@@ -87,19 +82,19 @@ public class AuctionMatcher extends Matcher {
         int maxTrade = -1;
         int maxPrice = -1;
         for (int price : prices) {
-            int openedBuyQuantity = security.getOrderBook().getOpenedOrders(price, Side.BUY).stream()
+            int openedBuyQuantity = security.getOrderBook().getOpenOrders(price, Side.BUY).stream()
                     .mapToInt(Order::getAllQuantity).sum();
-            int openedSellQuantity = security.getOrderBook().getOpenedOrders(price, Side.SELL).stream()
+            int openedSellQuantity = security.getOrderBook().getOpenOrders(price, Side.SELL).stream()
                     .mapToInt(Order::getAllQuantity).sum();
             if (min(openedBuyQuantity, openedSellQuantity) > maxTrade) {
                 maxTrade = min(openedBuyQuantity, openedSellQuantity);
                 maxPrice = price;
             }
-            if (min(openedBuyQuantity, openedSellQuantity) == maxTrade) {
+            else if (min(openedBuyQuantity, openedSellQuantity) == maxTrade) {
                 if (Math.abs(maxPrice - security.getLastTradePrice()) > Math
                         .abs(price - security.getLastTradePrice()))
                     maxPrice = price;
-                if (Math.abs(maxPrice - security.getLastTradePrice()) == Math
+                else if (Math.abs(maxPrice - security.getLastTradePrice()) == Math
                         .abs(price - security.getLastTradePrice()))
                     maxPrice = Math.min(maxPrice, price);
             }
@@ -116,10 +111,10 @@ public class AuctionMatcher extends Matcher {
         return MatchResult.executed(order, new LinkedList<>());
     }
 
-    public int getTradeAbleQuantity(int price, Security security) {
-        int openedBuyQuantity = security.getOrderBook().getOpenedOrders(price, Side.BUY).stream()
+    public int getTradableQuantity(int price, Security security) {
+        int openedBuyQuantity = security.getOrderBook().getOpenOrders(price, Side.BUY).stream()
                 .mapToInt(Order::getAllQuantity).sum();
-        int openedSellQuantity = security.getOrderBook().getOpenedOrders(price, Side.SELL).stream()
+        int openedSellQuantity = security.getOrderBook().getOpenOrders(price, Side.SELL).stream()
                 .mapToInt(Order::getAllQuantity).sum();
         return Math.min(openedSellQuantity, openedBuyQuantity);
     }

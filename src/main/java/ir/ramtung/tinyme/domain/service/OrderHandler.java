@@ -125,7 +125,7 @@ public class OrderHandler {
 
     private void publishOpenPriceEvent(Security security) {
         int openingPrice = auctionMatcher.findOpeningPrice(security);
-        int tradableQuantity = auctionMatcher.getTradeAbleQuantity(openingPrice, security);
+        int tradableQuantity = auctionMatcher.getTradableQuantity(openingPrice, security);
         eventPublisher.publish(new OpeningPriceEvent(security.getIsin(), openingPrice, tradableQuantity));
     }
 
