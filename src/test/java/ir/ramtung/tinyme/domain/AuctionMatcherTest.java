@@ -15,6 +15,7 @@ import ir.ramtung.tinyme.repository.SecurityRepository;
 import ir.ramtung.tinyme.repository.ShareholderRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
@@ -209,5 +210,4 @@ public class AuctionMatcherTest {
         verify(eventPublisher).publish(new TradeEvent(security.getIsin(), 15490, 285, 1, 7));
         verify(eventPublisher, atLeast(2)).publish(new SecurityStateChangedEvent(security.getIsin(), MatchingState.AUCTION));
     }
-
 }

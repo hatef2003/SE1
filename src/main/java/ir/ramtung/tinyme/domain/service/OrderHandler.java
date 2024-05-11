@@ -178,11 +178,13 @@ public class OrderHandler {
         if (enterOrderRq.getStopLimit() != 0 && enterOrderRq.getMinimumExecutionQuantity() > 0)
             errors.add(Message.STOP_LIMIT_ORDER_HAS_MINIMUM_EXECUTION_QUANTITY);
 
-        var state = securityRepository.findSecurityByIsin(enterOrderRq.getSecurityIsin()).getState();
-        if (state == MatchingState.AUCTION && enterOrderRq.getMinimumExecutionQuantity() != 0)
-            errors.add(Message.AUCTION_CANNOT_HANDLE_MINIMUM_EXECUTION_QUANTITY);
-        if (state == MatchingState.AUCTION && enterOrderRq.getStopLimit() != 0)
-            errors.add(Message.AUCTION_CANNOT_HANDLE_STOP_LIMIT_ORDER);
+        if (securityRepository.findSecurityByIsin(enterOrderRq.getSecurityIsin())!= null) {
+            MatchingState state = securityRepository.findSecurityByIsin(enterOrderRq.getSecurityIsin()).getState();
+            if (state == MatchingState.AUCTION && enterOrderRq.getMinimumExecutionQuantity() != 0)
+                errors.add(Message.AUCTION_CANNOT_HANDLE_MINIMUM_EXECUTION_QUANTITY);
+            if (state == MatchingState.AUCTION && enterOrderRq.getStopLimit() != 0)
+                errors.add(Message.AUCTION_CANNOT_HANDLE_STOP_LIMIT_ORDER);
+        }
 
         if (!errors.isEmpty())
             throw new InvalidRequestException(errors);
