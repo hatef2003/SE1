@@ -597,9 +597,9 @@ public class OrderHandlerTest {
     @Test
     void shifting_between_matching_states_does_not_change_results() {
         assertThatNoException().isThrownBy(() -> orderHandler.handleChangeMatchingStateRq(
-                new ChangeMatchingStateRq(security.getIsin(), MatchingState.AUCTION, 1)));
+                new ChangeMatchingStateRq(1, security.getIsin(), MatchingState.AUCTION)));
         assertThatNoException().isThrownBy(() -> orderHandler.handleChangeMatchingStateRq(
-                new ChangeMatchingStateRq(security.getIsin(), MatchingState.CONTINUOUS, 2)));
+                new ChangeMatchingStateRq(2, security.getIsin(), MatchingState.CONTINUOUS)));
 
         Order matchingBuyOrder1 = new Order(100, security, Side.BUY, 300, 15500, broker1, shareholder);
         Order matchingBuyOrder2 = new Order(110, security, Side.BUY, 300, 15500, broker1, shareholder);

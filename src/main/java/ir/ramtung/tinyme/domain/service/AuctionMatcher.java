@@ -26,7 +26,7 @@ public class AuctionMatcher extends Matcher {
         return trades;
     }
 
-    public LinkedList<Trade> match(Security security, int openingPrice) {
+    private LinkedList<Trade> match(Security security, int openingPrice) {
         LinkedList<Trade> trades = new LinkedList<>();
         ArrayList<Order> openedSell = security.getOrderBook().getOpenOrders(openingPrice, Side.SELL);
         ArrayList<Order> openedBuy = security.getOrderBook().getOpenOrders(openingPrice, Side.BUY);
@@ -92,7 +92,7 @@ public class AuctionMatcher extends Matcher {
             return MatchResult.notEnoughCredit();
         order.getBroker().decreaseCreditBy(order.getValue());
         order.getSecurity().getOrderBook().enqueue(order);
-        return MatchResult.executed(order, new LinkedList<>());
+        return MatchResult.executed(order, List.of());
     }
 
     public int getTradableQuantity(int price, Security security) {

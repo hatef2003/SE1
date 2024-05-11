@@ -5,7 +5,10 @@ import ir.ramtung.tinyme.domain.entity.*;
 import ir.ramtung.tinyme.domain.service.AuctionMatcher;
 import ir.ramtung.tinyme.domain.service.OrderHandler;
 import ir.ramtung.tinyme.messaging.EventPublisher;
+import ir.ramtung.tinyme.messaging.Message;
+import ir.ramtung.tinyme.messaging.event.*;
 import ir.ramtung.tinyme.messaging.request.ChangeMatchingStateRq;
+import ir.ramtung.tinyme.messaging.request.EnterOrderRq;
 import ir.ramtung.tinyme.messaging.request.MatchingState;
 import ir.ramtung.tinyme.repository.BrokerRepository;
 import ir.ramtung.tinyme.repository.SecurityRepository;
@@ -17,12 +20,17 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.annotation.DirtiesContext;
 
+import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
 
 import static ir.ramtung.tinyme.domain.entity.Side.BUY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.Mockito.atLeast;
+import static org.mockito.Mockito.verify;
 
 @SpringBootTest
 @Import(MockedJMSTestConfig.class)
@@ -59,7 +67,7 @@ public class AuctionMatcherTest {
         broker = Broker.builder().brokerId(1).build();
         brokerRepository.addBroker(broker);
 
-        assertThatNoException().isThrownBy(() -> orderHandler.handleChangeMatchingStateRq(new ChangeMatchingStateRq(security.getIsin(), MatchingState.AUCTION, 1)));
+        assertThatNoException().isThrownBy(() -> orderHandler.handleChangeMatchingStateRq(new ChangeMatchingStateRq(1, security.getIsin(), MatchingState.AUCTION)));
     }
 
     @Test
@@ -116,7 +124,7 @@ public class AuctionMatcherTest {
     @Test
     void auction_matcher_matches_one_trade() {
         shareholder.incPosition(security,100_000_000);
-        broker.increaseCreditBy(100_000_000);
+        broker.increaseCreditBy(10_000_000);
 
         security.setLastTradePrice(15450);
         List<Order> orders = Arrays.asList(
@@ -138,5 +146,68 @@ public class AuctionMatcherTest {
 
         assertThat(result.size()).isEqualTo(1);
         assertThat(result).containsExactly(supposedTrade);
+        assertThat(broker.getCredit()).isEqualTo(4690450);
     }
+
+    @Test
+    void auction_matcher_execute_with_not_enough_credit() {
+        shareholder.incPosition(security,100_000_000);
+        broker.increaseCreditBy(1000_000);
+
+        security.setLastTradePrice(15450);
+        Order order = new Order(1, security, Side.BUY, 304, 15700, broker, shareholder);
+        var result = auctionMatcher.execute(order);
+        assertThat(result.outcome()).isEqualTo(MatchingOutcome.NOT_ENOUGH_CREDIT);
+        assertThat(broker.getCredit()).isEqualTo(1000_000);
+    }
+
+    @Test
+    void auction_matcher_execute_with_enough_credit() {
+        shareholder.incPosition(security,100_000_000);
+        broker.increaseCreditBy(10_000_000);
+
+        security.setLastTradePrice(15450);
+        Order order = new Order(1, security, Side.BUY, 304, 15700, broker, shareholder);
+        var result = auctionMatcher.execute(order);
+        assertThat(result.outcome()).isEqualTo(MatchingOutcome.EXECUTED);
+        assertThat(broker.getCredit()).isEqualTo(5_227_200);
+    }
+
+    @Test
+    void order_handler_only_accepts_auction_appropriate_orders() {
+        shareholder.incPosition(security,100_000_000);
+        broker.increaseCreditBy(10_000_000);
+        orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(1, security.getIsin(), 1, LocalDateTime.now(), Side.BUY, 304, 15700, broker.getBrokerId(), shareholder.getShareholderId(), 0));
+        orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(2, security.getIsin(), 2, LocalDateTime.now(), Side.BUY, 43, 15500, broker.getBrokerId(), shareholder.getShareholderId(), 0));
+        orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(3, security.getIsin(), 3, LocalDateTime.now(), Side.BUY, 445, 15450, broker.getBrokerId(), shareholder.getShareholderId(), 0));
+        orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(7, security.getIsin(), 7, LocalDateTime.now(), Side.SELL, 285, 15490, broker.getBrokerId(), shareholder.getShareholderId(), 0));
+        orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(11, security.getIsin(),11, LocalDateTime.now(),  Side.SELL, 65, 15820, broker.getBrokerId(), shareholder.getShareholderId(), 0, 20));
+        orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(12, security.getIsin(),12, LocalDateTime.now(),  Side.SELL, 65, 15820, broker.getBrokerId(), shareholder.getShareholderId(), 0, 0, 19));
+
+        verify(eventPublisher).publish(new OrderRejectedEvent(3,3, List.of(Message.BUYER_HAS_NOT_ENOUGH_CREDIT)));
+        verify(eventPublisher).publish(new OrderRejectedEvent(11,11, List.of(Message.AUCTION_CANNOT_HANDLE_MINIMUM_EXECUTION_QUANTITY)));
+        verify(eventPublisher).publish(new OrderRejectedEvent(12,12, List.of(Message.AUCTION_CANNOT_HANDLE_STOP_LIMIT_ORDER)));
+        verify(eventPublisher).publish(new OrderAcceptedEvent(7,7));
+    }
+
+    @Test
+    void order_handler_changes_from_auction_to_auction_with_trades_correctly() {
+        shareholder.incPosition(security,100_000_000);
+        broker.increaseCreditBy(10_000_000);
+        orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(1, security.getIsin(), 1, LocalDateTime.now(), Side.BUY, 304, 15700, broker.getBrokerId(), shareholder.getShareholderId(), 0));
+        orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(2, security.getIsin(), 2, LocalDateTime.now(), Side.BUY, 43, 15500, broker.getBrokerId(), shareholder.getShareholderId(), 0));
+        orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(7, security.getIsin(), 7, LocalDateTime.now(), Side.SELL, 285, 15490, broker.getBrokerId(), shareholder.getShareholderId(), 0));
+
+        assertThatNoException().isThrownBy(() -> orderHandler.handleChangeMatchingStateRq(new ChangeMatchingStateRq(1, security.getIsin(), MatchingState.AUCTION)));
+
+        verify(eventPublisher).publish(new OpeningPriceEvent(security.getIsin(), 15700, 0));
+        verify(eventPublisher).publish(new OpeningPriceEvent(security.getIsin(), 15500, 0));
+        verify(eventPublisher).publish(new OpeningPriceEvent(security.getIsin(), 15490, 285));
+        verify(eventPublisher).publish(new OrderAcceptedEvent(1,1));
+        verify(eventPublisher).publish(new OrderAcceptedEvent(2,2));
+        verify(eventPublisher).publish(new OrderAcceptedEvent(7,7));
+        verify(eventPublisher).publish(new TradeEvent(security.getIsin(), 15490, 285, 1, 7));
+        verify(eventPublisher, atLeast(2)).publish(new SecurityStateChangedEvent(security.getIsin(), MatchingState.AUCTION));
+    }
+
 }

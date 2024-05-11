@@ -16,6 +16,7 @@ import ir.ramtung.tinyme.repository.SecurityRepository;
 import ir.ramtung.tinyme.repository.ShareholderRepository;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
@@ -86,7 +87,6 @@ public class OrderHandler {
 
     public void handleEnterOrder(EnterOrderRq enterOrderRq) {
         try {
-
             validateEnterOrderRq(enterOrderRq);
 
             Security security = securityRepository.findSecurityByIsin(enterOrderRq.getSecurityIsin());
@@ -123,6 +123,22 @@ public class OrderHandler {
         }
     }
 
+    public void handleChangeMatchingStateRq(ChangeMatchingStateRq changeMatchingStateRq) throws InvalidRequestException {
+        Security security = securityRepository.findSecurityByIsin(changeMatchingStateRq.getSecurityIsin());
+        if (security == null)
+            throw new InvalidRequestException(Message.UNKNOWN_SECURITY_ISIN);
+
+        eventPublisher.publish(new SecurityStateChangedEvent(security.getIsin(), changeMatchingStateRq.getTargetState()));
+        if (security.getState() == MatchingState.AUCTION) {
+//            publishOpenPriceEvent(security);
+            LinkedList<Trade> trades = auctionMatcher.open(security);
+            publishTradeEvent(trades);
+            if (!trades.isEmpty())
+                this.activateStopLimitOrders(security, changeMatchingStateRq.getRequestId());
+        }
+        security.changeMatchingStateRq(changeMatchingStateRq.getTargetState());
+    }
+
     private void publishOpenPriceEvent(Security security) {
         int openingPrice = auctionMatcher.findOpeningPrice(security);
         int tradableQuantity = auctionMatcher.getTradableQuantity(openingPrice, security);
@@ -132,21 +148,6 @@ public class OrderHandler {
     private void publishTradeEvent(LinkedList<Trade> trades) {
         for (Trade trade : trades)
             eventPublisher.publish(new TradeEvent(trade));
-    }
-
-    public void handleChangeMatchingStateRq(ChangeMatchingStateRq changeMatchingStateRq) throws InvalidRequestException {
-        Security security = securityRepository.findSecurityByIsin(changeMatchingStateRq.getSecurityIsin());
-        if (security == null)
-            throw new InvalidRequestException(Message.UNKNOWN_SECURITY_ISIN);
-
-        if (security.getState() == MatchingState.AUCTION) {
-            publishOpenPriceEvent(security);
-            LinkedList<Trade> trades = auctionMatcher.open(security);
-            publishTradeEvent(trades);
-            if (!trades.isEmpty())  
-                this.activateStopLimitOrders(security, changeMatchingStateRq.getRequestId());
-        }
-        security.changeMatchingStateRq(changeMatchingStateRq.getTargetState());
     }
 
     private void validateEnterOrderRq(EnterOrderRq enterOrderRq) throws InvalidRequestException {
@@ -176,6 +177,13 @@ public class OrderHandler {
             errors.add(Message.STOP_LIMIT_ORDER_IS_ICEBERG);
         if (enterOrderRq.getStopLimit() != 0 && enterOrderRq.getMinimumExecutionQuantity() > 0)
             errors.add(Message.STOP_LIMIT_ORDER_HAS_MINIMUM_EXECUTION_QUANTITY);
+
+        var state = securityRepository.findSecurityByIsin(enterOrderRq.getSecurityIsin()).getState();
+        if (state == MatchingState.AUCTION && enterOrderRq.getMinimumExecutionQuantity() != 0)
+            errors.add(Message.AUCTION_CANNOT_HANDLE_MINIMUM_EXECUTION_QUANTITY);
+        if (state == MatchingState.AUCTION && enterOrderRq.getStopLimit() != 0)
+            errors.add(Message.AUCTION_CANNOT_HANDLE_STOP_LIMIT_ORDER);
+
         if (!errors.isEmpty())
             throw new InvalidRequestException(errors);
     }
