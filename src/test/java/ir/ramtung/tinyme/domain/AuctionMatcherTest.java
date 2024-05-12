@@ -123,7 +123,7 @@ public class AuctionMatcherTest {
     void auction_matcher_matches_one_trade() {
         shareholder.incPosition(security,100_000_000);
         broker.increaseCreditBy(10_000_000);
-
+        System.out.println(broker.getCredit());
         security.setLastTradePrice(15450);
         List<Order> orders = Arrays.asList(
                 new Order(1, security, Side.BUY, 304, 15700, broker, shareholder),
@@ -144,7 +144,7 @@ public class AuctionMatcherTest {
 
         assertThat(result.size()).isEqualTo(1);
         assertThat(result).containsExactly(supposedTrade);
-        assertThat(broker.getCredit()).isEqualTo(4690450);
+        assertThat(broker.getCredit()).isEqualTo(14_474_500);
     }
 
     @Test
@@ -195,6 +195,7 @@ public class AuctionMatcherTest {
         orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(1, security.getIsin(), 1, LocalDateTime.now(), Side.BUY, 304, 15700, broker.getBrokerId(), shareholder.getShareholderId(), 0));
         orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(2, security.getIsin(), 2, LocalDateTime.now(), Side.BUY, 43, 15500, broker.getBrokerId(), shareholder.getShareholderId(), 0));
         orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(7, security.getIsin(), 7, LocalDateTime.now(), Side.SELL, 285, 15490, broker.getBrokerId(), shareholder.getShareholderId(), 0));
+        assertThat(broker.getCredit()).isEqualTo(10_000_000-(304* 15700 + 43 * 15500));
 
         assertThatNoException().isThrownBy(() -> orderHandler.handleChangeMatchingStateRq(new ChangeMatchingStateRq(1, security.getIsin(), MatchingState.AUCTION)));
 
@@ -206,6 +207,8 @@ public class AuctionMatcherTest {
         verify(eventPublisher).publish(new OrderAcceptedEvent(7,7));
         verify(eventPublisher).publish(new TradeEvent(security.getIsin(), 15490, 285, 1, 7));
         verify(eventPublisher, atLeast(2)).publish(new SecurityStateChangedEvent(security.getIsin(), MatchingState.AUCTION));
+        assertThat(broker.getCredit()).isEqualTo(10_000_000-(285*15490 + 19 * 15700 + 43 * 15500) + 285 * 15490);
+
     }
 
     @Test
@@ -253,5 +256,4 @@ public class AuctionMatcherTest {
         verify(eventPublisher).publish(new SecurityStateChangedEvent(security.getIsin(), MatchingState.AUCTION));
         verify(eventPublisher).publish(new SecurityStateChangedEvent(security.getIsin(), MatchingState.CONTINUOUS));
     }
-
 }

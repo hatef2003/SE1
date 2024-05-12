@@ -57,19 +57,20 @@ public class AuctionMatcher extends Matcher {
         while (buyOrder.getQuantity() != 0) {
             if (sells.isEmpty()) {
                 if (buyOrder.getQuantity() != 0)
-                    buyOrder.getBroker().decreaseCreditBy(buyOrder.getValue() * buyOrder.getQuantity());
+                    buyOrder.getBroker().decreaseCreditBy(buyOrder.getValue());
                 break;
             }
             if (sells.get(0).getQuantity() > buyOrder.getQuantity()) {
                 trades.add(new Trade(buyOrder.getSecurity(), price, buyOrder.getQuantity(), buyOrder, sells.get(0)));
                 buyOrder.getBroker().decreaseCreditBy(price * buyOrder.getQuantity());
+                sells.get(0).getBroker().increaseCreditBy(price * buyOrder.getQuantity());
                 sells.get(0).decreaseQuantity(buyOrder.getQuantity());
                 buyOrder.decreaseQuantity(buyOrder.getQuantity());
                 buyOrder.getSecurity().getOrderBook().removeByOrderId(Side.BUY, buyOrder.getOrderId());
             } else {
-                trades.add(
-                        new Trade(buyOrder.getSecurity(), price, sells.get(0).getQuantity(), buyOrder, sells.get(0)));
+                trades.add(new Trade(buyOrder.getSecurity(), price, sells.get(0).getQuantity(), buyOrder, sells.get(0)));
                 buyOrder.getBroker().decreaseCreditBy(price * sells.get(0).getQuantity());
+                sells.get(0).getBroker().increaseCreditBy(price * sells.get(0).getQuantity());
                 buyOrder.decreaseQuantity(sells.get(0).getQuantity());
                 sells.get(0).decreaseQuantity(sells.get(0).getQuantity());
                 if (sells.get(0) instanceof IcebergOrder sell) {
@@ -90,7 +91,8 @@ public class AuctionMatcher extends Matcher {
     public MatchResult execute(Order order) {
         if (!order.getBroker().hasEnoughCredit(order.getValue()))
             return MatchResult.notEnoughCredit();
-        order.getBroker().decreaseCreditBy(order.getValue());
+        if (order.getSide() == Side.BUY)
+            order.getBroker().decreaseCreditBy(order.getValue());
         order.getSecurity().getOrderBook().enqueue(order);
         return MatchResult.executed(order, List.of());
     }
