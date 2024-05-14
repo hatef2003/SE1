@@ -26,7 +26,6 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.verify;
 
@@ -199,8 +198,7 @@ public class AuctionMatcherTest {
 
         assertThatNoException().isThrownBy(() -> orderHandler.handleChangeMatchingStateRq(new ChangeMatchingStateRq(1, security.getIsin(), MatchingState.AUCTION)));
 
-        verify(eventPublisher).publish(new OpeningPriceEvent(security.getIsin(), 15700, 0));
-        verify(eventPublisher).publish(new OpeningPriceEvent(security.getIsin(), 15500, 0));
+        verify(eventPublisher, atLeast(2)).publish(new OpeningPriceEvent(security.getIsin(), -1, 0));
         verify(eventPublisher).publish(new OpeningPriceEvent(security.getIsin(), 15490, 285));
         verify(eventPublisher).publish(new OrderAcceptedEvent(1,1));
         verify(eventPublisher).publish(new OrderAcceptedEvent(2,2));
@@ -221,8 +219,7 @@ public class AuctionMatcherTest {
 
         assertThatNoException().isThrownBy(() -> orderHandler.handleChangeMatchingStateRq(new ChangeMatchingStateRq(1, security.getIsin(), MatchingState.CONTINUOUS)));
 
-        verify(eventPublisher).publish(new OpeningPriceEvent(security.getIsin(), 15700, 0));
-        verify(eventPublisher).publish(new OpeningPriceEvent(security.getIsin(), 15500, 0));
+        verify(eventPublisher, atLeast(2)).publish(new OpeningPriceEvent(security.getIsin(), -1, 0));
         verify(eventPublisher).publish(new OpeningPriceEvent(security.getIsin(), 15490, 285));
         verify(eventPublisher).publish(new OrderAcceptedEvent(1,1));
         verify(eventPublisher).publish(new OrderAcceptedEvent(2,2));
@@ -243,8 +240,7 @@ public class AuctionMatcherTest {
 
         assertThatNoException().isThrownBy(() -> orderHandler.handleChangeMatchingStateRq(new ChangeMatchingStateRq(1, security.getIsin(), MatchingState.CONTINUOUS)));
 
-        verify(eventPublisher).publish(new OpeningPriceEvent(security.getIsin(), 15700, 0));
-        verify(eventPublisher).publish(new OpeningPriceEvent(security.getIsin(), 15500, 0));
+        verify(eventPublisher, atLeast(2)).publish(new OpeningPriceEvent(security.getIsin(), -1, 0));
         verify(eventPublisher).publish(new OpeningPriceEvent(security.getIsin(), 15490, 85));
         verify(eventPublisher).publish(new OpeningPriceEvent(security.getIsin(), 15580, 304));
 
@@ -255,5 +251,16 @@ public class AuctionMatcherTest {
         verify(eventPublisher, atLeast(2)).publish(new TradeEvent(security.getIsin(), 15580, 100, 1, 8));
         verify(eventPublisher).publish(new SecurityStateChangedEvent(security.getIsin(), MatchingState.AUCTION));
         verify(eventPublisher).publish(new SecurityStateChangedEvent(security.getIsin(), MatchingState.CONTINUOUS));
+    }
+    @Test
+    void auction_matcher_does_not_calculate_opening_price_when_no_valid_trade_found(){
+        List<Order> newOrders = Arrays.asList(
+                new Order(1, security, Side.SELL, 200, 25000, broker, shareholder),
+                new Order(1, security, Side.BUY, 20, 5000, broker, shareholder)
+        );
+        newOrders.forEach(order -> security.getOrderBook().enqueue(order));
+
+        int openingPrice = auctionMatcher.findOpeningPrice(security);
+        assertThat(openingPrice).isEqualTo(-1);
     }
 }

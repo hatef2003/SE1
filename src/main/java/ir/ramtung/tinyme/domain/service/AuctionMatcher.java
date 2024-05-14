@@ -109,7 +109,7 @@ public class AuctionMatcher extends Matcher {
         List<Integer> prices = Stream
                 .concat(security.getOrderBook().getBuyQueue().stream(), security.getOrderBook().getSellQueue().stream())
                 .map(Order::getPrice).toList();
-        int maxTrade = -1;
+        int maxTrade = 0;
         int maxPrice = -1;
         for (int price : prices) {
             int openedBuyQuantity = security.getOrderBook().getOpenOrders(price, Side.BUY).stream()
