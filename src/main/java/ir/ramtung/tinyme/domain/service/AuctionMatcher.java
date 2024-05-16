@@ -105,9 +105,11 @@ public class AuctionMatcher extends Matcher {
     }
 
     public int findOpeningPrice(Security security) {
-        List<Integer> prices = Stream
+        List<Integer> prices = new ArrayList<>(Stream
                 .concat(security.getOrderBook().getBuyQueue().stream(), security.getOrderBook().getSellQueue().stream())
-                .map(Order::getPrice).toList();
+                .map(Order::getPrice).toList());
+        prices.add(security.getLastTradePrice());
+
         int maxTrade = 0;
         int maxPrice = -1;
         for (int price : prices) {

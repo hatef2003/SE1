@@ -137,7 +137,6 @@ public class OrderHandler {
         eventPublisher
                 .publish(new SecurityStateChangedEvent(security.getIsin(), changeMatchingStateRq.getTargetState()));
         if (security.getState() == MatchingState.AUCTION) {
-            ;
             LinkedList<Trade> trades = auctionMatcher.open(security);
             publishTradeEvent(trades);
             security.changeMatchingStateRq(changeMatchingStateRq.getTargetState());
@@ -166,15 +165,16 @@ public class OrderHandler {
             errors.add(Message.ORDER_QUANTITY_NOT_POSITIVE);
         if (enterOrderRq.getPrice() <= 0)
             errors.add(Message.ORDER_PRICE_NOT_POSITIVE);
+
         Security security = securityRepository.findSecurityByIsin(enterOrderRq.getSecurityIsin());
-        if (security == null)
-            errors.add(Message.UNKNOWN_SECURITY_ISIN);
-        else {
+        if (security != null) {
             if (enterOrderRq.getQuantity() % security.getLotSize() != 0)
                 errors.add(Message.QUANTITY_NOT_MULTIPLE_OF_LOT_SIZE);
             if (enterOrderRq.getPrice() % security.getTickSize() != 0)
                 errors.add(Message.PRICE_NOT_MULTIPLE_OF_TICK_SIZE);
-        }
+        } else
+            errors.add(Message.UNKNOWN_SECURITY_ISIN);
+
         if (brokerRepository.findBrokerById(enterOrderRq.getBrokerId()) == null)
             errors.add(Message.UNKNOWN_BROKER_ID);
         if (shareholderRepository.findShareholderById(enterOrderRq.getShareholderId()) == null)
