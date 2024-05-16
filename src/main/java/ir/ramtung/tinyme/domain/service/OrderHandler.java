@@ -41,13 +41,14 @@ public class OrderHandler {
         this.auctionMatcher = new AuctionMatcher();
     }
     private void activateStopLimitOrders(Security security, long request_id) {
+        Matcher securityMatcher = (security.getState() == MatchingState.AUCTION) ? auctionMatcher : matcher;
         ArrayList<StopLimitOrder> activatedList = security.getOrderCancellationQueue()
                 .getActivatedOrder(security.getLastTradePrice());
         for (int i = 0; i < activatedList.size(); i++) {
             StopLimitOrder stopLimitOrder = activatedList.get(i);
             stopLimitOrder.restoreBrokerCredit();
             Order newOrder = new Order(stopLimitOrder);
-            MatchResult result = matcher.execute(newOrder);
+            MatchResult result = securityMatcher.execute(newOrder);
             eventPublisher.publish(new OrderActivatedEvent(request_id, stopLimitOrder.getOrderId()));
             if (!result.trades().isEmpty()) {
                 eventPublisher.publish(new OrderExecutedEvent(request_id, stopLimitOrder.getOrderId(),
