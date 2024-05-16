@@ -40,6 +40,7 @@ public class OrderHandler {
         this.matcher = matcher;
         this.auctionMatcher = new AuctionMatcher();
     }
+
     private void activateStopLimitOrders(Security security, long request_id) {
         Matcher securityMatcher = (security.getState() == MatchingState.AUCTION) ? auctionMatcher : matcher;
         ArrayList<StopLimitOrder> activatedList = security.getOrderCancellationQueue()
@@ -124,20 +125,23 @@ public class OrderHandler {
         }
     }
 
-    public void handleChangeMatchingStateRq(ChangeMatchingStateRq changeMatchingStateRq) throws InvalidRequestException {
+    public void handleChangeMatchingStateRq(ChangeMatchingStateRq changeMatchingStateRq)
+            throws InvalidRequestException {
         Security security = securityRepository.findSecurityByIsin(changeMatchingStateRq.getSecurityIsin());
         if (security == null)
             throw new InvalidRequestException(Message.UNKNOWN_SECURITY_ISIN);
 
-        eventPublisher.publish(new SecurityStateChangedEvent(security.getIsin(), changeMatchingStateRq.getTargetState()));
+        eventPublisher
+                .publish(new SecurityStateChangedEvent(security.getIsin(), changeMatchingStateRq.getTargetState()));
         if (security.getState() == MatchingState.AUCTION) {
-//            publishOpenPriceEvent(security);
+            ;
             LinkedList<Trade> trades = auctionMatcher.open(security);
             publishTradeEvent(trades);
+            security.changeMatchingStateRq(changeMatchingStateRq.getTargetState());
             if (!trades.isEmpty())
                 this.activateStopLimitOrders(security, changeMatchingStateRq.getRequestId());
-        }
-        security.changeMatchingStateRq(changeMatchingStateRq.getTargetState());
+        } else
+            security.changeMatchingStateRq(changeMatchingStateRq.getTargetState());
     }
 
     private void publishOpenPriceEvent(Security security) {
@@ -179,7 +183,7 @@ public class OrderHandler {
         if (enterOrderRq.getStopLimit() != 0 && enterOrderRq.getMinimumExecutionQuantity() > 0)
             errors.add(Message.STOP_LIMIT_ORDER_HAS_MINIMUM_EXECUTION_QUANTITY);
 
-        if (securityRepository.findSecurityByIsin(enterOrderRq.getSecurityIsin())!= null) {
+        if (securityRepository.findSecurityByIsin(enterOrderRq.getSecurityIsin()) != null) {
             MatchingState state = securityRepository.findSecurityByIsin(enterOrderRq.getSecurityIsin()).getState();
             if (state == MatchingState.AUCTION && enterOrderRq.getMinimumExecutionQuantity() != 0)
                 errors.add(Message.AUCTION_CANNOT_HANDLE_MINIMUM_EXECUTION_QUANTITY);

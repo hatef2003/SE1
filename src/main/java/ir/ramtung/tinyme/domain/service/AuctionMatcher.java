@@ -66,7 +66,6 @@ public class AuctionMatcher extends Matcher {
                 sells.get(0).getBroker().increaseCreditBy(price * buyOrder.getQuantity());
                 sells.get(0).decreaseQuantity(buyOrder.getQuantity());
                 buyOrder.decreaseQuantity(buyOrder.getQuantity());
-                buyOrder.getSecurity().getOrderBook().removeByOrderId(Side.BUY, buyOrder.getOrderId());
             } else {
                 trades.add(new Trade(buyOrder.getSecurity(), price, sells.get(0).getQuantity(), buyOrder, sells.get(0)));
                 buyOrder.getBroker().decreaseCreditBy(price * sells.get(0).getQuantity());

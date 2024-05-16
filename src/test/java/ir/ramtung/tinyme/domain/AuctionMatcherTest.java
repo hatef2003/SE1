@@ -320,13 +320,28 @@ public class AuctionMatcherTest {
         assertThat(auctionMatcher.findOpeningPrice(security)).isEqualTo(100);
         assertThat(auctionMatcher.getTradableQuantity(100, security)).isEqualTo(200);
         assertThatNoException().isThrownBy(() -> orderHandler.handleChangeMatchingStateRq(
-                new ChangeMatchingStateRq(1, security.getIsin(), MatchingState.CONTINUOUS)));
+                new ChangeMatchingStateRq(1, security.getIsin(), MatchingState.AUCTION)));
         verify(eventPublisher).publish(new OrderActivatedEvent(1, 10));
 
     }
+
     @Test
-    void ice_berg_order_remain_at_the_end_of_matching()
-    {
-        
+    void ice_berg_order_remain_at_the_end_of_matching() {
+        List<Order> newOrders = Arrays.asList(
+                new Order(1, security, Side.SELL, 100, 50, broker, shareholder),
+                new Order(2, security, Side.SELL, 100, 100, broker, shareholder),
+                new Order(3, security, Side.SELL, 100, 120, broker, shareholder),
+                new Order(4, security, Side.SELL, 100, 160, broker, shareholder),
+                new IcebergOrder(5, security, Side.BUY, 100, 140, broker, shareholder,10),
+                new Order(6, security, Side.BUY, 100, 110, broker, shareholder),
+                new Order(7, security, Side.BUY, 100, 100, broker, shareholder),
+                new Order(8, security, Side.BUY, 100, 45, broker, shareholder));
+        newOrders.forEach(order -> security.getOrderBook().enqueue(order));
+        assertThat(auctionMatcher.findOpeningPrice(security)).isEqualTo(100);
+        assertThat(auctionMatcher.getTradableQuantity(100, security)).isEqualTo(200);
+        assertThatNoException().isThrownBy(() -> orderHandler.handleChangeMatchingStateRq(
+                new ChangeMatchingStateRq(1, security.getIsin(), MatchingState.AUCTION)));
+        assertThat(security.getOrderBook().getBuyQueue().get(0).getOrderId()).isEqualTo(5);
+
     }
 }
