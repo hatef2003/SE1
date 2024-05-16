@@ -8,11 +8,13 @@ import ir.ramtung.tinyme.messaging.EventPublisher;
 import ir.ramtung.tinyme.messaging.Message;
 import ir.ramtung.tinyme.messaging.event.*;
 import ir.ramtung.tinyme.messaging.request.ChangeMatchingStateRq;
+import ir.ramtung.tinyme.messaging.request.DeleteOrderRq;
 import ir.ramtung.tinyme.messaging.request.EnterOrderRq;
 import ir.ramtung.tinyme.messaging.request.MatchingState;
 import ir.ramtung.tinyme.repository.BrokerRepository;
 import ir.ramtung.tinyme.repository.SecurityRepository;
 import ir.ramtung.tinyme.repository.ShareholderRepository;
+import net.bytebuddy.asm.Advice;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -285,7 +287,7 @@ public class AuctionMatcherTest {
     }
 
     @Test
-    void range() {
+    void opening_price_equal_to_last_trade_when_in_range() {
         security.setLastTradePrice(7000);
         List<Order> newOrders = Arrays.asList(
                 new Order(1, security, Side.SELL, 200, 5000, broker, shareholder),
@@ -351,5 +353,54 @@ public class AuctionMatcherTest {
         assertThatNoException().isThrownBy(() -> orderHandler.handleChangeMatchingStateRq(
                 new ChangeMatchingStateRq(1, security.getIsin(), MatchingState.AUCTION)));
         assertThat(security.getOrderBook().getBuyQueue().get(0).getOrderId()).isEqualTo(5);
+    }
+
+    @Test
+    void opening_price_event_published_after_update() {
+        shareholder.incPosition(security, 100_000_000);
+        broker.increaseCreditBy(20_000_000);
+
+        orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(1, security.getIsin(), 1, LocalDateTime.now(),
+                Side.BUY, 304, 15700, broker.getBrokerId(), shareholder.getShareholderId(), 0));
+        orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(2, security.getIsin(), 2, LocalDateTime.now(),
+                Side.BUY, 43, 15500, broker.getBrokerId(), shareholder.getShareholderId(), 0));
+        orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(7, security.getIsin(), 7, LocalDateTime.now(),
+                Side.SELL, 85, 15490, broker.getBrokerId(), shareholder.getShareholderId(), 0));
+        orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(8, security.getIsin(), 8, LocalDateTime.now(),
+                Side.SELL, 300, 15490, broker.getBrokerId(), shareholder.getShareholderId(), 100));
+
+        verify(eventPublisher, atLeast(2)).publish(new OpeningPriceEvent(security.getIsin(), -1, 0));
+        verify(eventPublisher).publish(new OpeningPriceEvent(security.getIsin(), 15490, 85));
+        verify(eventPublisher).publish(new OpeningPriceEvent(security.getIsin(), 15490, 347));
+
+        orderHandler.handleEnterOrder(EnterOrderRq.createUpdateOrderRq(1, security.getIsin(), 8, LocalDateTime.now(),
+                Side.SELL, 304, 15580, broker.getBrokerId(), shareholder.getShareholderId(), 100));
+
+        verify(eventPublisher).publish(new OrderUpdatedEvent(1, 8));
+        verify(eventPublisher).publish(new OpeningPriceEvent(security.getIsin(), 15580, 304));
+    }
+
+    @Test
+    void opening_price_event_published_after_delete() {
+        shareholder.incPosition(security, 100_000_000);
+        broker.increaseCreditBy(20_000_000);
+
+        orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(1, security.getIsin(), 1, LocalDateTime.now(),
+                Side.BUY, 304, 15700, broker.getBrokerId(), shareholder.getShareholderId(), 0));
+        orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(2, security.getIsin(), 2, LocalDateTime.now(),
+                Side.BUY, 43, 15500, broker.getBrokerId(), shareholder.getShareholderId(), 0));
+        orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(7, security.getIsin(), 7, LocalDateTime.now(),
+                Side.SELL, 85, 15490, broker.getBrokerId(), shareholder.getShareholderId(), 0));
+        orderHandler.handleEnterOrder(EnterOrderRq.createNewOrderRq(8, security.getIsin(), 8, LocalDateTime.now(),
+                Side.SELL, 300, 15580, broker.getBrokerId(), shareholder.getShareholderId(), 100));
+
+        verify(eventPublisher, atLeast(2)).publish(new OpeningPriceEvent(security.getIsin(), -1, 0));
+        verify(eventPublisher).publish(new OpeningPriceEvent(security.getIsin(), 15490, 85));
+        verify(eventPublisher).publish(new OpeningPriceEvent(security.getIsin(), 15580, 304));
+
+        orderHandler.handleDeleteOrder(new DeleteOrderRq(1, security.getIsin(), Side.SELL, 8));
+
+        verify(eventPublisher).publish(new OrderDeletedEvent(1, 8));
+        verify(eventPublisher, atLeast(2)).publish(new OpeningPriceEvent(security.getIsin(), 15490, 85));
     }
 }

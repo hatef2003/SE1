@@ -75,11 +75,11 @@ public class OrderHandler {
     }
 
     private void publishExecutedOrderEvents(EnterOrderRq enterOrderRq, MatchResult matchResult, Security security) {
-        if (enterOrderRq.getRequestType() == OrderEntryType.NEW_ORDER) {
+        if (enterOrderRq.getRequestType() == OrderEntryType.NEW_ORDER)
             eventPublisher.publish(new OrderAcceptedEvent(enterOrderRq.getRequestId(), enterOrderRq.getOrderId()));
-
-        } else
+        else
             eventPublisher.publish(new OrderUpdatedEvent(enterOrderRq.getRequestId(), enterOrderRq.getOrderId()));
+
         if (security.getState() == MatchingState.AUCTION) 
             publishOpenPriceEvent(security);
         

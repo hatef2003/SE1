@@ -191,12 +191,4 @@ class SecurityTest {
         assertThat(result.trades()).hasSize(2);
         assertThat(result.remainder().getQuantity()).isZero();
     }
-    @Test
-    void auction_matcher_finding_opening_price()
-    {
-        security.setLastTradePrice(15890);
-        security.getOrderBook().enqueue(new Order(50, security, BUY, 15000, 15900, broker, shareholder));
-        int a = auctionMatcher.findOpeningPrice(security);
-        assertThat(a).isEqualTo(15900);
-    }
 }
