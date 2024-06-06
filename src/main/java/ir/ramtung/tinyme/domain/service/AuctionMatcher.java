@@ -26,27 +26,27 @@ public class AuctionMatcher extends Matcher {
         return trades;
     }
 
+    private void handleBuyOrderZeroQuantity(Order buyOrder, ArrayList<Order> openedBuy) {
+        if (buyOrder instanceof IcebergOrder) {
+            IcebergOrder icebergBuyOrder = (IcebergOrder) buyOrder;
+            icebergBuyOrder.replenish();
+            if (icebergBuyOrder.getQuantity() != 0)
+                openedBuy.add(icebergBuyOrder);
+            else
+                buyOrder.getSecurity().getOrderBook().removeByOrderId(Side.BUY, buyOrder.getOrderId());
+        } else
+            buyOrder.getSecurity().getOrderBook().removeByOrderId(Side.BUY, buyOrder.getOrderId());
+    }
+
     private LinkedList<Trade> match(Security security, int openingPrice) {
         LinkedList<Trade> trades = new LinkedList<>();
         ArrayList<Order> openedSell = security.getOrderBook().getOpenOrders(openingPrice, Side.SELL);
         ArrayList<Order> openedBuy = security.getOrderBook().getOpenOrders(openingPrice, Side.BUY);
-        while (!openedBuy.isEmpty()) {
+        while (!openedBuy.isEmpty() && !openedSell.isEmpty()) {
             Order buyOrder = openedBuy.remove(0);
-            if (!openedSell.isEmpty()) {
-                trades.addAll(matchBuyOrder(buyOrder, openedSell, openingPrice));
-                if (buyOrder.getQuantity() == 0)
-                    if (buyOrder instanceof IcebergOrder icebergBuyOrder) {
-                        icebergBuyOrder.replenish();
-                        if (icebergBuyOrder.getQuantity() != 0)
-                            openedBuy.add(icebergBuyOrder);
-                        else
-                            security.getOrderBook().removeByOrderId(Side.BUY, buyOrder.getOrderId());
-                    } else
-                        security.getOrderBook().removeByOrderId(Side.BUY, buyOrder.getOrderId());
-                else
-                    break;
-            } else
-                break;
+            trades.addAll(matchBuyOrder(buyOrder, openedSell, openingPrice));
+            if (buyOrder.getQuantity() == 0)
+                handleBuyOrderZeroQuantity(buyOrder, openedBuy);
         }
         return trades;
     }
@@ -67,7 +67,8 @@ public class AuctionMatcher extends Matcher {
                 sells.get(0).decreaseQuantity(buyOrder.getQuantity());
                 buyOrder.decreaseQuantity(buyOrder.getQuantity());
             } else {
-                trades.add(new Trade(buyOrder.getSecurity(), price, sells.get(0).getQuantity(), buyOrder, sells.get(0)));
+                trades.add(
+                        new Trade(buyOrder.getSecurity(), price, sells.get(0).getQuantity(), buyOrder, sells.get(0)));
                 buyOrder.getBroker().decreaseCreditBy(price * sells.get(0).getQuantity());
                 sells.get(0).getBroker().increaseCreditBy(price * sells.get(0).getQuantity());
                 buyOrder.decreaseQuantity(sells.get(0).getQuantity());
@@ -120,8 +121,7 @@ public class AuctionMatcher extends Matcher {
             if (min(openedBuyQuantity, openedSellQuantity) > maxTrade) {
                 maxTrade = min(openedBuyQuantity, openedSellQuantity);
                 maxPrice = price;
-            }
-            else if (min(openedBuyQuantity, openedSellQuantity) == maxTrade) {
+            } else if (min(openedBuyQuantity, openedSellQuantity) == maxTrade) {
                 if (Math.abs(maxPrice - security.getLastTradePrice()) > Math
                         .abs(price - security.getLastTradePrice()))
                     maxPrice = price;
