@@ -91,7 +91,7 @@ public class OrderBook {
     {
         ArrayList<Order> openOrders = new ArrayList<>();
         for (Order order: getQueue(side))
-            if (order.canTrade(openingPrice))
+            if (order.canTradeWithPrice(openingPrice))
                 openOrders.add(order);
         return openOrders;
     }

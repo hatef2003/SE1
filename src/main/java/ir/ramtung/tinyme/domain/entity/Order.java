@@ -140,7 +140,7 @@ public class Order {
         return quantity;
     }
 
-    public boolean canTrade(int price)
+    public boolean canTradeWithPrice(int price)
     {
         if(side==Side.SELL)
             return price>= this.price ;
