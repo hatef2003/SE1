@@ -1,6 +1,8 @@
 package ir.ramtung.tinyme.domain.service;
 
 import ir.ramtung.tinyme.domain.entity.*;
+import ir.ramtung.tinyme.messaging.exception.NotEnoughCreditException;
+
 import org.springframework.stereotype.Service;
 
 import java.util.LinkedList;
@@ -19,16 +21,14 @@ public class Matcher {
             Order matchingOrder = orderBook.matchWithFirst(newOrder);
             if (matchingOrder == null)
                 break;
-
-            Trade trade = new Trade(newOrder.getSecurity(), matchingOrder.getPrice(),
-                    Math.min(newOrder.getQuantity(), matchingOrder.getQuantity()), newOrder, matchingOrder);
-            if (newOrder.getSide() == Side.BUY) {
-                if (trade.buyerHasEnoughCredit())
-                    trade.decreaseBuyersCredit();
-                else {
-                    rollbackTrades(newOrder, trades);
-                    return MatchResult.notEnoughCredit();
-                }
+            Trade trade;
+            try 
+            {
+                trade = makeTrade(matchingOrder, newOrder, trades);
+            }
+            catch( NotEnoughCreditException Ex)
+            {
+                return MatchResult.notEnoughCredit();
             }
             trade.increaseSellersCredit();
             trades.add(trade);
@@ -42,9 +42,23 @@ public class Matcher {
             if (newOrder.getSide() == Side.SELL)
                 rollbackSellTrades(newOrder, trades);
             else
-                rollbackTrades(newOrder, trades);
+                rollbackBuyTrades(newOrder, trades);
             return MatchResult.notEnoughTrades();
         }
+    }
+    private Trade makeTrade( Order matchingOrder , Order newOrder ,  LinkedList<Trade> trades) throws NotEnoughCreditException
+    {
+        Trade trade = new Trade(newOrder.getSecurity(), matchingOrder.getPrice(),
+                    Math.min(newOrder.getQuantity(), matchingOrder.getQuantity()), newOrder, matchingOrder);
+            if (newOrder.getSide() == Side.BUY) {
+                if (trade.buyerHasEnoughCredit())
+                    trade.decreaseBuyersCredit();
+                else {
+                    rollbackBuyTrades(newOrder, trades);
+                    throw new NotEnoughCreditException();
+                }
+            }
+            return trade ; 
     }
     public void matchTwoOrder(Order matchingOrder , Order newOrder ,OrderBook orderBook )
     {
@@ -62,7 +76,7 @@ public class Matcher {
             newOrder.makeQuantityZero();
         }
     }
-    protected void rollbackTrades(Order newOrder, LinkedList<Trade> trades) {
+    protected void rollbackBuyTrades(Order newOrder, LinkedList<Trade> trades) {
         assert newOrder.getSide() == Side.BUY;
         newOrder.getBroker().increaseCreditBy(trades.stream().mapToLong(Trade::getTradedValue).sum());
         trades.forEach(trade -> trade.getSell().getBroker().decreaseCreditBy(trade.getTradedValue()));
@@ -90,7 +104,7 @@ public class Matcher {
         if (result.remainder().getQuantity() > 0) {
             if (order.getSide() == Side.BUY) {
                 if (!order.getBroker().hasEnoughCredit(order.getValue())) {
-                    rollbackTrades(order, result.trades());
+                    rollbackBuyTrades(order, result.trades());
                     return MatchResult.notEnoughCredit();
                 }
                 order.getBroker().decreaseCreditBy(order.getValue());
