@@ -33,19 +33,8 @@ public class Matcher {
             trade.increaseSellersCredit();
             trades.add(trade);
             tradesQuantity += trade.getQuantity();
-            if (newOrder.getQuantity() >= matchingOrder.getQuantity()) {
-                newOrder.decreaseQuantity(matchingOrder.getQuantity());
-                orderBook.removeFirst(matchingOrder.getSide());
-                if (matchingOrder instanceof IcebergOrder icebergOrder) {
-                    icebergOrder.decreaseQuantity(matchingOrder.getQuantity());
-                    icebergOrder.replenish();
-                    if (icebergOrder.getQuantity() > 0)
-                        orderBook.enqueue(icebergOrder);
-                }
-            } else {
-                matchingOrder.decreaseQuantity(newOrder.getQuantity());
-                newOrder.makeQuantityZero();
-            }
+            matchTwoOrder(matchingOrder, newOrder, orderBook);
+            
         }
         if (tradesQuantity >= newOrder.getMinimumExecutionQuantity() || isUpdate)
             return MatchResult.executed(newOrder, trades);
@@ -57,7 +46,22 @@ public class Matcher {
             return MatchResult.notEnoughTrades();
         }
     }
-
+    public void matchTwoOrder(Order matchingOrder , Order newOrder ,OrderBook orderBook )
+    {
+        if (newOrder.getQuantity() >= matchingOrder.getQuantity()) {
+            newOrder.decreaseQuantity(matchingOrder.getQuantity());
+            orderBook.removeFirst(matchingOrder.getSide());
+            if (matchingOrder instanceof IcebergOrder icebergOrder) {
+                icebergOrder.decreaseQuantity(matchingOrder.getQuantity());
+                icebergOrder.replenish();
+                if (icebergOrder.getQuantity() > 0)
+                    orderBook.enqueue(icebergOrder);
+            }
+        } else {
+            matchingOrder.decreaseQuantity(newOrder.getQuantity());
+            newOrder.makeQuantityZero();
+        }
+    }
     protected void rollbackTrades(Order newOrder, LinkedList<Trade> trades) {
         assert newOrder.getSide() == Side.BUY;
         newOrder.getBroker().increaseCreditBy(trades.stream().mapToLong(Trade::getTradedValue).sum());
