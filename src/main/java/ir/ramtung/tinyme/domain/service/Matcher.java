@@ -32,9 +32,11 @@ public class Matcher {
             matchTwoOrder(matchingOrder, newOrder, orderBook);
         }
 
-        if (trades.stream().mapToInt(Trade::getQuantity).sum() >= newOrder.getMinimumExecutionQuantity() || isUpdate)
+        if (trades.stream().mapToInt(Trade::getQuantity).sum() >= newOrder.getMinimumExecutionQuantity())
+        {
+            newOrder.makeMinimumExceptionZero();
             return MatchResult.executed(newOrder, trades);
-        else {
+        } else {
             if (newOrder.getSide() == Side.SELL)
                 rollbackSellTrades(newOrder, trades);
             else

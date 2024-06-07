@@ -153,13 +153,12 @@ public class Order {
         return quantity;
     }
 
-    public boolean isInSecurity()
-    {
-        return security.hasOrder(side, orderId);
-    }
-
     public void removeFromSecurity()
     {
         security.getOrderBook().removeByOrderId(side, orderId);
+    }
+    public void makeMinimumExceptionZero()
+    {
+        this.minimumExecutionQuantity = 0;
     }
 }
