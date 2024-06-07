@@ -28,7 +28,7 @@ public class Security {
     @Builder.Default
     private OrderCancellationQueue orderCancellationQueue = new OrderCancellationQueue();
     @Builder.Default
-    MatchingState state = MatchingState.CONTINUOUS;
+    private MatchingState state = MatchingState.CONTINUOUS;
 
     public MatchResult newOrder(EnterOrderRq enterOrderRq, Broker broker, Shareholder shareholder, Matcher matcher) {
         if (!requestHasEnoughPositions(enterOrderRq, shareholder,
@@ -97,7 +97,7 @@ public class Security {
     private MatchResult updateValidOrder(StopLimitOrder stopLimitOrder, EnterOrderRq updateOrderRq) {
         if (stopLimitOrder.side == BUY) {
             stopLimitOrder.restoreBrokerCredit();
-            orderCancellationQueue.deactivatedBuyOrders.remove(stopLimitOrder);
+            orderCancellationQueue.removeFromDeactivatedList(stopLimitOrder.orderId);
             if (stopLimitOrder.getBroker()
                     .hasEnoughCredit((long) updateOrderRq.getPrice() * updateOrderRq.getQuantity())) {
                 stopLimitOrder.getBroker()

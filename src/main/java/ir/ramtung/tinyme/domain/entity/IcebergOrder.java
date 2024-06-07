@@ -11,8 +11,8 @@ import java.time.LocalDateTime;
 @EqualsAndHashCode(callSuper = true)
 @ToString(callSuper = true)
 public class IcebergOrder extends Order {
-    int peakSize;
-    int displayedQuantity;
+    private int peakSize;
+    private int displayedQuantity;
 
     public IcebergOrder(long orderId, Security security, Side side, int quantity, int price, Broker broker, Shareholder shareholder, LocalDateTime entryTime, int peakSize, int displayedQuantity, OrderStatus status , int minimumExecutionQuantity) {
         super(orderId, security, side, quantity, price, broker, shareholder, entryTime, status, minimumExecutionQuantity);

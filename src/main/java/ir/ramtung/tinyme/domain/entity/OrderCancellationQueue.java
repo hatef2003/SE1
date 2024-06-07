@@ -8,8 +8,8 @@ import java.util.stream.Stream;
 
 @Getter
 public class OrderCancellationQueue {
-    ArrayList<StopLimitOrder> deactivatedBuyOrders;
-    ArrayList<StopLimitOrder> deactivatedSellOrders;
+    private final ArrayList<StopLimitOrder> deactivatedBuyOrders;
+    private final ArrayList<StopLimitOrder> deactivatedSellOrders;
 
     OrderCancellationQueue() {
         deactivatedBuyOrders = new ArrayList<>();

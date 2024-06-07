@@ -27,8 +27,7 @@ public class AuctionMatcher extends Matcher {
     }
 
     private void handleBuyOrderZeroQuantity(Order buyOrder, ArrayList<Order> openedBuy) {
-        if (buyOrder instanceof IcebergOrder) {
-            IcebergOrder icebergBuyOrder = (IcebergOrder) buyOrder;
+        if (buyOrder instanceof IcebergOrder icebergBuyOrder) {
             icebergBuyOrder.replenish();
             if (icebergBuyOrder.getQuantity() != 0)
                 openedBuy.add(icebergBuyOrder);

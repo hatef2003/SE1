@@ -11,7 +11,7 @@ import java.time.LocalDateTime;
 @EqualsAndHashCode(callSuper = true)
 @ToString(callSuper = true)
 public class StopLimitOrder extends Order{
-    int stopLimit;
+    private int stopLimit;
 
     public boolean isActive(int lastTradePrice)
     {

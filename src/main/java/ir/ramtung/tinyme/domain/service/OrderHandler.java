@@ -24,12 +24,12 @@ import java.util.stream.Collectors;
 
 @Service
 public class OrderHandler {
-    SecurityRepository securityRepository;
-    BrokerRepository brokerRepository;
-    ShareholderRepository shareholderRepository;
-    EventPublisher eventPublisher;
-    Matcher matcher;
-    AuctionMatcher auctionMatcher;
+    private final SecurityRepository securityRepository;
+    private final BrokerRepository brokerRepository;
+    private final ShareholderRepository shareholderRepository;
+    private final EventPublisher eventPublisher;
+    private final Matcher matcher;
+    private final AuctionMatcher auctionMatcher;
 
     public OrderHandler(SecurityRepository securityRepository, BrokerRepository brokerRepository,
             ShareholderRepository shareholderRepository, EventPublisher eventPublisher, Matcher matcher) {
