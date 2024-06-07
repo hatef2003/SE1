@@ -11,16 +11,15 @@ import java.time.LocalDateTime;
 import java.util.Objects;
 
 @Data
-@EqualsAndHashCode(callSuper = false)
 @AllArgsConstructor
 @NoArgsConstructor
 public class TradeEvent extends Event {
-    LocalDateTime time;
-    String securityIsin;
-    int price;
-    int quantity;
-    long buyId;
-    long sellId;
+    private LocalDateTime time;
+    private String securityIsin;
+    private int price;
+    private int quantity;
+    private long buyId;
+    private long sellId;
 
     public TradeEvent(Trade trade) {
         securityIsin = trade.getSecurity().getIsin();
