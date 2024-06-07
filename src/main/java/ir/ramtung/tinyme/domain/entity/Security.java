@@ -211,4 +211,9 @@ public class Security {
     public void changeMatchingStateRq(MatchingState targetState) {
         this.state = targetState;
     }
+
+    public boolean hasOrder(Side orderSide, long orderId)
+    {
+        return orderBook.findByOrderId(orderSide, orderId) != null;
+    }
 }

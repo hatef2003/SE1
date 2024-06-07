@@ -147,9 +147,15 @@ public class Order {
         else
             return price<=this.price;
     }
+
     public int getAllQuantity()
     {
         return quantity;
+    }
+
+    public void removeFromSecurity()
+    {
+        security.getOrderBook().removeByOrderId(side, orderId);
     }
     public void makeMinimumExceptionZero()
     {
