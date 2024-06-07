@@ -161,4 +161,9 @@ public class Order {
     {
         this.minimumExecutionQuantity = 0;
     }
+
+    public boolean canMatch()
+    {
+        return security.getOrderBook().hasOrderOfType(side.opposite());
+    }
 }

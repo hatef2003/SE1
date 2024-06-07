@@ -15,12 +15,10 @@ import java.lang.Math;
 @Service
 public class AuctionMatcher extends Matcher {
     public LinkedList<Trade> open(Security security) {
-        int openingPrice = this.findOpeningPrice(security);
-        LinkedList<Trade> trades = this.match(security, openingPrice);
-        for (Trade trade : trades) {
-            trade.getSell().getShareholder().decPosition(security, trade.getQuantity());
-            trade.getBuy().getShareholder().incPosition(security, trade.getQuantity());
-        }
+        int openingPrice = findOpeningPrice(security);
+        LinkedList<Trade> trades = match(security, openingPrice);
+        for (Trade trade : trades)
+            trade.changeShareholderPositions();
         if (!trades.isEmpty())
             security.setLastTradePrice(openingPrice);
         return trades;
@@ -32,9 +30,9 @@ public class AuctionMatcher extends Matcher {
             if (icebergBuyOrder.getQuantity() != 0)
                 openedBuy.add(icebergBuyOrder);
             else
-                buyOrder.getSecurity().getOrderBook().removeByOrderId(Side.BUY, buyOrder.getOrderId());
+                buyOrder.removeFromSecurity();
         } else
-            buyOrder.getSecurity().getOrderBook().removeByOrderId(Side.BUY, buyOrder.getOrderId());
+            buyOrder.removeFromSecurity();
     }
 
     private LinkedList<Trade> match(Security security, int openingPrice) {
@@ -75,11 +73,11 @@ public class AuctionMatcher extends Matcher {
                 if (sells.get(0) instanceof IcebergOrder sell) {
                     sell.replenish();
                     if (sell.getQuantity() == 0)
-                        buyOrder.getSecurity().getOrderBook().removeByOrderId(Side.SELL, sells.get(0).getOrderId());
+                        buyOrder.removeFromSecurity();
                     else
                         sells.add(sell);
                 } else
-                    buyOrder.getSecurity().getOrderBook().removeByOrderId(Side.SELL, sells.get(0).getOrderId());
+                    buyOrder.removeFromSecurity();
                 sells.remove(0);
             }
         }

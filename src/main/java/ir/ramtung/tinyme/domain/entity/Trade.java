@@ -52,4 +52,9 @@ public class Trade {
         return buy.getBroker().hasEnoughCredit(getTradedValue());
     }
 
+    public void changeShareholderPositions() {
+        sell.getShareholder().decPosition(security, quantity);
+        buy.getShareholder().incPosition(security, quantity);
+    }
+
 }

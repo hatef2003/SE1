@@ -212,8 +212,4 @@ public class Security {
         this.state = targetState;
     }
 
-    public boolean hasOrder(Side orderSide, long orderId)
-    {
-        return orderBook.findByOrderId(orderSide, orderId) != null;
-    }
 }

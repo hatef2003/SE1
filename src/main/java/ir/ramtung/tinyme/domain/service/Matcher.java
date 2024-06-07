@@ -11,13 +11,12 @@ import java.util.ListIterator;
 @Service
 public class Matcher {
     public MatchResult match(Order newOrder) {
-        boolean isUpdate = newOrder.isInSecurity();
         newOrder.removeFromSecurity();
 
         OrderBook orderBook = newOrder.getSecurity().getOrderBook();
         LinkedList<Trade> trades = new LinkedList<>();
 
-        while (orderBook.hasOrderOfType(newOrder.getSide().opposite()) && newOrder.getQuantity() > 0) {
+        while (newOrder.canMatch() && newOrder.getQuantity() > 0) {
             Order matchingOrder = orderBook.matchWithFirst(newOrder);
             if (matchingOrder == null)
                 break;
@@ -47,8 +46,9 @@ public class Matcher {
 
     private Trade makeTrade(Order matchingOrder, Order newOrder, LinkedList<Trade> trades)
             throws NotEnoughCreditException {
+        int tradeQuantity = Math.min(newOrder.getQuantity(), matchingOrder.getQuantity());
         Trade trade = new Trade(newOrder.getSecurity(), matchingOrder.getPrice(),
-                Math.min(newOrder.getQuantity(), matchingOrder.getQuantity()), newOrder, matchingOrder);
+                tradeQuantity, newOrder, matchingOrder);
         if (newOrder.getSide() == Side.BUY) {
             if (trade.buyerHasEnoughCredit())
                 trade.decreaseBuyersCredit();
