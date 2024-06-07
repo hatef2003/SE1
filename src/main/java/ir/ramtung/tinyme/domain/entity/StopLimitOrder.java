@@ -23,10 +23,12 @@ public class StopLimitOrder extends Order{
         else
             return lastTradePrice <= stopLimit;
     }
+
     public StopLimitOrder(long orderId, Security security, Side side, int quantity, int price, Broker broker, Shareholder shareholder,LocalDateTime entryTime, OrderStatus status , int stopLimit) {
         super(orderId, security, side, quantity, price, broker, shareholder, entryTime, status, 0);
         this.stopLimit = stopLimit;
     }
+
     public void restoreBrokerCredit()
     {
         broker.increaseCreditBy((long) quantity * price);
@@ -35,10 +37,12 @@ public class StopLimitOrder extends Order{
     public Order snapshot() {
         return new StopLimitOrder(orderId, security, side, quantity, price, broker, shareholder, entryTime, OrderStatus.SNAPSHOT, stopLimit);
     }
+
     @Override
     public Order snapshotWithQuantity(int newQuantity) {
         return new StopLimitOrder(orderId, security, side, newQuantity, price, broker, shareholder, entryTime, OrderStatus.SNAPSHOT, stopLimit);
     }
+
     @Override
     public void updateFromRequest(EnterOrderRq updateOrderRq) {
         quantity = updateOrderRq.getQuantity();

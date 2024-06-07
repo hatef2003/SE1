@@ -140,6 +140,7 @@ public class Security {
         }
         return matchResult;
     }
+
     private boolean loosesPriority(Order order, EnterOrderRq updateOrderRq)
     {
         return  order.isQuantityIncreased(updateOrderRq.getQuantity())
@@ -147,6 +148,7 @@ public class Security {
         || ((order instanceof IcebergOrder icebergOrder)
                 && (icebergOrder.getPeakSize() < updateOrderRq.getPeakSize()));
     }
+
     private void validateEnterOrderRq(EnterOrderRq enterOrderRq) throws InvalidRequestException {
         if (enterOrderRq.getPrice() <= 0)
             throw new InvalidRequestException(Message.INVALID_PRICE);

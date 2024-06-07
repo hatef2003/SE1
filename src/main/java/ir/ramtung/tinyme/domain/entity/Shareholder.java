@@ -10,14 +10,12 @@ import java.util.Map;
 
 @ToString
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
+@Getter
 @Builder
 public class Shareholder {
-    @Getter
     @EqualsAndHashCode.Include
     private long shareholderId;
-    @Getter
     private String name;
-    @Getter
     @Builder.Default
     private Map<Security, Integer> positions = new HashMap<>();
 
