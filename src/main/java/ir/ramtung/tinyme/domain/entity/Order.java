@@ -151,4 +151,8 @@ public class Order {
     {
         return quantity;
     }
+    public void makeMinimumExceptionZero()
+    {
+        this.minimumExecutionQuantity = 0;
+    }
 }
