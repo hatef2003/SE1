@@ -16,7 +16,6 @@ import ir.ramtung.tinyme.repository.SecurityRepository;
 import ir.ramtung.tinyme.repository.ShareholderRepository;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
@@ -101,7 +100,8 @@ public class OrderHandler {
 
             MatchResult matchResult;
             if (enterOrderRq.getRequestType() == OrderEntryType.NEW_ORDER)
-                matchResult = security.newOrder(orderFactory.createOrder(enterOrderRq), broker, shareholder, securityMatcher);
+                matchResult = security.newOrder(orderFactory.createOrder(enterOrderRq), broker, shareholder,
+                        securityMatcher);
             else
                 matchResult = security.updateOrder(enterOrderRq, securityMatcher);
 
@@ -161,33 +161,38 @@ public class OrderHandler {
 
     private void validateEnterOrderRq(EnterOrderRq enterOrderRq) throws InvalidRequestException {
         List<String> errors = new LinkedList<>();
-        if (enterOrderRq.getOrderId() <= 0)
-            errors.add(Message.INVALID_ORDER_ID);
-        if (enterOrderRq.getQuantity() <= 0)
-            errors.add(Message.ORDER_QUANTITY_NOT_POSITIVE);
-        if (enterOrderRq.getPrice() <= 0)
-            errors.add(Message.ORDER_PRICE_NOT_POSITIVE);
+        // if (enterOrderRq.getOrderId() <= 0)
+        // errors.add(Message.INVALID_ORDER_ID);
+        // if (enterOrderRq.getQuantity() <= 0)
+        // errors.add(Message.ORDER_QUANTITY_NOT_POSITIVE);
+        // if (enterOrderRq.getPrice() <= 0)
+        // errors.add(Message.ORDER_PRICE_NOT_POSITIVE);
 
-        Security security = securityRepository.findSecurityByIsin(enterOrderRq.getSecurityIsin());
-        if (security != null) {
-            if (enterOrderRq.getQuantity() % security.getLotSize() != 0)
-                errors.add(Message.QUANTITY_NOT_MULTIPLE_OF_LOT_SIZE);
-            if (enterOrderRq.getPrice() % security.getTickSize() != 0)
-                errors.add(Message.PRICE_NOT_MULTIPLE_OF_TICK_SIZE);
-        } else
-            errors.add(Message.UNKNOWN_SECURITY_ISIN);
+        // Security security =
+        // securityRepository.findSecurityByIsin(enterOrderRq.getSecurityIsin());
+        // if (security != null) {
+        // if (enterOrderRq.getQuantity() % security.getLotSize() != 0)
+        // errors.add(Message.QUANTITY_NOT_MULTIPLE_OF_LOT_SIZE);
+        // if (enterOrderRq.getPrice() % security.getTickSize() != 0)
+        // errors.add(Message.PRICE_NOT_MULTIPLE_OF_TICK_SIZE);
+        // } else
+        // errors.add(Message.UNKNOWN_SECURITY_ISIN);
 
-        if (brokerRepository.findBrokerById(enterOrderRq.getBrokerId()) == null)
-            errors.add(Message.UNKNOWN_BROKER_ID);
-        if (shareholderRepository.findShareholderById(enterOrderRq.getShareholderId()) == null)
-            errors.add(Message.UNKNOWN_SHAREHOLDER_ID);
-        if (enterOrderRq.getPeakSize() < 0 || enterOrderRq.getPeakSize() >= enterOrderRq.getQuantity())
-            errors.add(Message.INVALID_PEAK_SIZE);
+        // if (brokerRepository.findBrokerById(enterOrderRq.getBrokerId()) == null)
+        // errors.add(Message.UNKNOWN_BROKER_ID);
+        // if
+        // (shareholderRepository.findShareholderById(enterOrderRq.getShareholderId())
+        // == null)
+        // errors.add(Message.UNKNOWN_SHAREHOLDER_ID);
+        // if (enterOrderRq.getPeakSize() < 0 || enterOrderRq.getPeakSize() >=
+        // enterOrderRq.getQuantity())
+        // errors.add(Message.INVALID_PEAK_SIZE);
         if (enterOrderRq.getStopLimit() != 0 && enterOrderRq.getPeakSize() != 0)
             errors.add(Message.STOP_LIMIT_ORDER_IS_ICEBERG);
         if (enterOrderRq.getStopLimit() != 0 && enterOrderRq.getMinimumExecutionQuantity() > 0)
             errors.add(Message.STOP_LIMIT_ORDER_HAS_MINIMUM_EXECUTION_QUANTITY);
-
+        if (enterOrderRq.getStopLimit() < 0)
+            errors.add(Message.INVALID_STOP_LIMIT);
         if (securityRepository.findSecurityByIsin(enterOrderRq.getSecurityIsin()) != null) {
             MatchingState state = securityRepository.findSecurityByIsin(enterOrderRq.getSecurityIsin()).getState();
             if (state == MatchingState.AUCTION && enterOrderRq.getMinimumExecutionQuantity() != 0)
@@ -195,10 +200,10 @@ public class OrderHandler {
             if (state == MatchingState.AUCTION && enterOrderRq.getStopLimit() != 0)
                 errors.add(Message.AUCTION_CANNOT_HANDLE_STOP_LIMIT_ORDER);
         }
-        if (enterOrderRq.getStopLimit() < 0)
-            errors.add(Message.INVALID_STOP_LIMIT);
-        if (enterOrderRq.getPeakSize() != 0 && enterOrderRq.getQuantity() < enterOrderRq.getPeakSize())
-            errors.add(Message.PEAK_SIZE_MUST_BE_LESS_THAN_TOTAL_QUANTITY);
+
+        // if (enterOrderRq.getPeakSize() != 0 && enterOrderRq.getQuantity() <
+        // enterOrderRq.getPeakSize())
+        // errors.add(Message.PEAK_SIZE_MUST_BE_LESS_THAN_TOTAL_QUANTITY);
 
         if (!errors.isEmpty())
             throw new InvalidRequestException(errors);
