@@ -54,22 +54,13 @@ public class Security {
 
     public MatchResult updateOrder(EnterOrderRq updateOrderRq, Matcher matcher) throws InvalidRequestException {
         Order order = getOrderFromRequest(updateOrderRq);
-        if (order == null)
-            throw new InvalidRequestException(Message.ORDER_ID_NOT_FOUND);
-        if (!(order instanceof StopLimitOrder)) {
-            if (updateOrderRq.getStopLimit() != 0)
-                throw new InvalidRequestException(Message.ACTIVE_ORDER_CANT_HAVE_STOP_LIMIT);
-            if (order instanceof IcebergOrder && updateOrderRq.getPeakSize() == 0)
-                throw new InvalidRequestException(Message.INVALID_PEAK_SIZE);
-            if (!(order instanceof IcebergOrder) && updateOrderRq.getPeakSize() != 0)
-                throw new InvalidRequestException(Message.CANNOT_SPECIFY_PEAK_SIZE_FOR_A_NON_ICEBERG_ORDER);
-
-            return updateValidOrder(order, updateOrderRq, matcher);
-        } else
+        if (order instanceof StopLimitOrder)
             return updateValidOrder((StopLimitOrder) order, updateOrderRq);
+        else
+            return updateValidOrder(order, updateOrderRq, matcher);
     }
 
-    private Order getOrderFromRequest(EnterOrderRq updateOrderRq) {
+    public Order getOrderFromRequest(EnterOrderRq updateOrderRq) {
         Order bookOrder = orderBook.findByOrderId(updateOrderRq.getSide(), updateOrderRq.getOrderId());
         Order cancelledOrder = orderCancellationQueue.findStopLimitOrderById(updateOrderRq.getOrderId());
         return bookOrder != null ? bookOrder : cancelledOrder;

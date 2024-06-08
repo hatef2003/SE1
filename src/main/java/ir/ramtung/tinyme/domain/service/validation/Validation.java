@@ -24,14 +24,14 @@ public class Validation {
         BaseValidator stopLimitValidator = new StopLimitValidator();
         BaseValidator auctionValidator = new AuctionValidator();
         // TODO minimumExecptionQuantity validatoin
-
+        BaseValidator updateValidator = new UpdateValidator();
         orderAttributesValidator.setNext(securityValidator);
         securityValidator.setNext(brokerValidator);
         brokerValidator.setNext(shareholderValidator);
         shareholderValidator.setNext(icebergValidator);
         icebergValidator.setNext(stopLimitValidator);
         stopLimitValidator.setNext(auctionValidator);
-
+        auctionValidator.setNext(updateValidator);
         validatorHead = orderAttributesValidator;
     }
 
