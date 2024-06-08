@@ -23,7 +23,7 @@ public class Validation {
         BaseValidator icebergValidator = new IceBergValidator();
         BaseValidator stopLimitValidator = new StopLimitValidator();
         BaseValidator auctionValidator = new AuctionValidator();
-        // TODO minimumExecptionQuantity validatoin
+        BaseValidator minimumExceptionValidator = new MinimumExceptionQuantityValidator();
         BaseValidator updateValidator = new UpdateValidator();
         orderAttributesValidator.setNext(securityValidator);
         securityValidator.setNext(brokerValidator);
@@ -41,10 +41,7 @@ public class Validation {
                 ValidationArg  validationArg  = new ValidationArg(enterOrderRq, shareholder, broker, security);
                 validatorHead.validate(validationArg, errorList);
                 if (! errorList.isEmpty())
-                {
                     throw new InvalidRequestException(errorList);
-                }
-                
         }
 
 }

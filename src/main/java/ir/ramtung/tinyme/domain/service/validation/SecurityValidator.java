@@ -14,9 +14,8 @@ public class SecurityValidator extends BaseValidator {
                 errorList.add(Message.PRICE_NOT_MULTIPLE_OF_TICK_SIZE);
         } else
             errorList.add(Message.UNKNOWN_SECURITY_ISIN);
-        if (next != null) {
+        if (next != null)
             next.validate(validationArg, errorList);
-        }
     }
 
 }

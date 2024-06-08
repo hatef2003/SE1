@@ -18,11 +18,10 @@ public class Message {
     public static final String STOP_LIMIT_ORDER_IS_ICEBERG = "Stop limit order can't be Iceberg order";
     public static final String STOP_LIMIT_ORDER_HAS_MINIMUM_EXECUTION_QUANTITY = "Stop limit orders can't have minimum execution quantity ";
     public static final String ACTIVE_ORDER_CANT_HAVE_STOP_LIMIT = "Active order cant have stop limit";
-    public static final String INVALID_PRICE = "Price must be positive";
     public static final String INVALID_STOP_LIMIT = "Stop Limit must be positive";
     public static final String PEAK_SIZE_MUST_BE_LESS_THAN_TOTAL_QUANTITY = "Peak size must be less than total quantity";
-    public static final String INVALID_STOP_LIMIT_DURING_AUCTION_MATCHING = "Its not possible to enter stop limit order during auction matching";
-    public static final String INVALID_MINIMUM_EXECUTION_QUANTITY_DURING_AUCTION_MATCHING = "Its not possible to enter order with minimum execution quantity  during auction matching";
     public static final String AUCTION_CANNOT_HANDLE_MINIMUM_EXECUTION_QUANTITY = "auction matcher cannot handle minimum execution quantity";
     public static final String AUCTION_CANNOT_HANDLE_STOP_LIMIT_ORDER = "Auction matcher cannot handle stop limit order";
+
+    public static final String MINIMUM_EXCEPTION_QUANTITY_CANNOT_BE_NEGATIVE = "Minimum exception quantity cannot be negative";
 }

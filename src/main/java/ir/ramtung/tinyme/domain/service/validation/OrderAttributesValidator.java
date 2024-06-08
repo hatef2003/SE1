@@ -14,9 +14,7 @@ public class OrderAttributesValidator extends BaseValidator {
         if (validationArg.enterOrderRq().getPrice() <= 0)
             errorList.add(Message.ORDER_PRICE_NOT_POSITIVE);
         if(next != null)
-        {
             next.validate(validationArg, errorList);
-        }
     }
 
 }

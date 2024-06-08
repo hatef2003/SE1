@@ -10,12 +10,9 @@ public class BrokerValidator extends  BaseValidator{
     public void validate( ValidationArg validationArg, List<String> errorList)
     {
         if (validationArg.broker() == null)
-        {
             errorList.add(Message.UNKNOWN_BROKER_ID);
-        }
-        if (next != null) {
+        if (next != null)
             next.validate(validationArg, errorList);
-        }
     }
 
 }
