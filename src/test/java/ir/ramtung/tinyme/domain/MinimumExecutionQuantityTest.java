@@ -17,6 +17,7 @@ import java.util.List;
 import static ir.ramtung.tinyme.domain.entity.Side.BUY;
 import static ir.ramtung.tinyme.domain.entity.Side.SELL;
 import static org.assertj.core.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.booleanThat;
 
 @SpringBootTest
 @Import(MockedJMSTestConfig.class)
@@ -123,9 +124,8 @@ class MinimumExecutionQuantityTest {
     @Test
     void new_order_by_request_not_enough_trade() {
         long broker_credit_before_trade = broker.getCredit();
-        EnterOrderRq newOrderRequest = EnterOrderRq.createNewOrderRq(0, security.getIsin(), 5, LocalDateTime.now(), BUY,
-                200, 15850, 0, shareholder.getShareholderId(), 0, 100);
-        MatchResult result = security.newOrder(newOrderRequest, broker, shareholder, matcher);
+        Order newOrder = new Order(5,security,Side.BUY,200,15850,broker,shareholder,100);
+        MatchResult result = security.newOrder(newOrder, broker, shareholder, matcher);
         assertThat(result.outcome()).isEqualTo(MatchingOutcome.NOT_ENOUGH_TRADE);
         assertThat(broker.getCredit()).isEqualTo(broker_credit_before_trade);
         assertThat(security.getOrderBook().getSellQueue().get(0).getQuantity()).isEqualTo(65);
@@ -134,9 +134,8 @@ class MinimumExecutionQuantityTest {
     @Test
     void new_order_by_request_enough_trade() {
         long broker_credit_before_trade = broker.getCredit();
-        EnterOrderRq newOrderRequest = EnterOrderRq.createNewOrderRq(0, security.getIsin(), 5, LocalDateTime.now(), BUY,
-                55, 15850, 0, shareholder.getShareholderId(), 0, 45);
-        MatchResult result = security.newOrder(newOrderRequest, broker, shareholder, matcher);
+        Order newOrder  = new Order(5,security,Side.BUY,55,15850,broker,shareholder,45);
+        MatchResult result = security.newOrder(newOrder, broker, shareholder, matcher);
         assertThat(result.outcome()).isEqualTo(MatchingOutcome.EXECUTED);
         assertThat(broker.getCredit()).isEqualTo(broker_credit_before_trade);
         assertThat(security.getOrderBook().getSellQueue().get(0).getQuantity()).isEqualTo(10);
@@ -144,10 +143,9 @@ class MinimumExecutionQuantityTest {
 
     @Test
     void update_order_check() {
-        EnterOrderRq newOrderRequest = EnterOrderRq.createNewOrderRq(0, security.getIsin(), 2, LocalDateTime.now(), BUY,
-                200, 15850, 0, shareholder.getShareholderId(), 0, 65);
+        Order newOrder  = new Order(2,security,Side.BUY,200,15850,broker,shareholder,65);
         Order newOrder2 = new Order(9, security, SELL, 55, 18000, broker, shareholder);
-        security.newOrder(newOrderRequest, broker, shareholder, matcher);
+        security.newOrder(newOrder, broker, shareholder, matcher);
 
         var a = security.getOrderBook().findByOrderId(BUY, 2);
         System.out.println(a);

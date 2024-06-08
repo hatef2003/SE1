@@ -30,29 +30,10 @@ public class Security {
     @Builder.Default
     private MatchingState state = MatchingState.CONTINUOUS;
 
-    public MatchResult newOrder(EnterOrderRq enterOrderRq, Broker broker, Shareholder shareholder, Matcher matcher) {
-        if (!requestHasEnoughPositions(enterOrderRq, shareholder,
-                orderBook.totalSellQuantityByShareholder(shareholder) + enterOrderRq.getQuantity()))
+    public MatchResult newOrder(Order order, Broker broker, Shareholder shareholder, Matcher matcher) {
+        if (!requestHasEnoughPositions(order, shareholder,
+                orderBook.totalSellQuantityByShareholder(shareholder) + order.getQuantity()))
             return MatchResult.notEnoughPositions();
-        try {
-            validateEnterOrderRq(enterOrderRq);
-        } catch (InvalidRequestException ex) {
-            return MatchResult.invalidRequest();
-        }
-        Order order;
-        if (enterOrderRq.getPeakSize() != 0)
-            order = new IcebergOrder(enterOrderRq.getOrderId(), this, enterOrderRq.getSide(),
-                    enterOrderRq.getQuantity(), enterOrderRq.getPrice(), broker, shareholder,
-                    enterOrderRq.getEntryTime(), enterOrderRq.getPeakSize(),
-                    enterOrderRq.getMinimumExecutionQuantity());
-        else if (enterOrderRq.getStopLimit() != 0) {
-            order = new StopLimitOrder(enterOrderRq.getOrderId(), this, enterOrderRq.getSide(),
-                    enterOrderRq.getQuantity(), enterOrderRq.getPrice(), broker, shareholder,
-                    enterOrderRq.getEntryTime(), OrderStatus.NEW, enterOrderRq.getStopLimit());
-        } else
-            order = new Order(enterOrderRq.getOrderId(), this, enterOrderRq.getSide(),
-                    enterOrderRq.getQuantity(), enterOrderRq.getPrice(), broker, shareholder,
-                    enterOrderRq.getEntryTime(), enterOrderRq.getMinimumExecutionQuantity());
 
         return matchNewOrder(order, matcher);
     }
@@ -79,8 +60,6 @@ public class Security {
             order = orderCancellationQueue.findStopLimitOrderById(updateOrderRq.getOrderId());
         if (order == null)
             throw new InvalidRequestException(Message.ORDER_ID_NOT_FOUND);
-
-        validateEnterOrderRq(updateOrderRq);
         if (!(order instanceof StopLimitOrder)) {
             if (updateOrderRq.getStopLimit() != 0)
                 throw new InvalidRequestException(Message.ACTIVE_ORDER_CANT_HAVE_STOP_LIMIT);
@@ -115,7 +94,7 @@ public class Security {
     }
 
     private MatchResult updateValidOrder(Order order, EnterOrderRq updateOrderRq, Matcher matcher) {
-        if (!requestHasEnoughPositions(updateOrderRq, order.getShareholder(),
+        if (!requestHasEnoughPositions(order, order.getShareholder(),
                 orderBook.totalSellQuantityByShareholder(order.getShareholder()) - order.getQuantity()
                         + updateOrderRq.getQuantity()))
             return MatchResult.notEnoughPositions();
@@ -147,23 +126,6 @@ public class Security {
         || updateOrderRq.getPrice() != order.getPrice()
         || ((order instanceof IcebergOrder icebergOrder)
                 && (icebergOrder.getPeakSize() < updateOrderRq.getPeakSize()));
-    }
-
-    private void validateEnterOrderRq(EnterOrderRq enterOrderRq) throws InvalidRequestException {
-        if (enterOrderRq.getPrice() <= 0)
-            throw new InvalidRequestException(Message.INVALID_PRICE);
-        if (enterOrderRq.getStopLimit() < 0)
-            throw new InvalidRequestException(Message.INVALID_STOP_LIMIT);
-        if (enterOrderRq.getStopLimit() != 0 && enterOrderRq.getPeakSize() != 0)
-            throw new InvalidRequestException(Message.STOP_LIMIT_ORDER_IS_ICEBERG);
-        if (enterOrderRq.getStopLimit() != 0 && enterOrderRq.getMinimumExecutionQuantity() != 0)
-            throw new InvalidRequestException(Message.STOP_LIMIT_ORDER_HAS_MINIMUM_EXECUTION_QUANTITY);
-        if (enterOrderRq.getPeakSize() != 0 && enterOrderRq.getQuantity() < enterOrderRq.getPeakSize())
-            throw new InvalidRequestException(Message.PEAK_SIZE_MUST_BE_LESS_THAN_TOTAL_QUANTITY);
-        if (state == MatchingState.AUCTION && enterOrderRq.getStopLimit() != 0)
-            throw new InvalidRequestException(Message.INVALID_STOP_LIMIT_DURING_AUCTION_MATCHING);
-        if (state == MatchingState.AUCTION && enterOrderRq.getMinimumExecutionQuantity() != 0)
-            throw new InvalidRequestException(Message.INVALID_MINIMUM_EXECUTION_QUANTITY_DURING_AUCTION_MATCHING);
     }
 
     private MatchResult matchNewOrder(Order order, Matcher matcher) {
@@ -200,8 +162,8 @@ public class Security {
         }
     }
 
-    private boolean requestHasEnoughPositions(EnterOrderRq updateOrderRq, Shareholder shareholder, int position) {
-        return updateOrderRq.getSide() == Side.BUY || shareholder.hasEnoughPositionsOn(this, position);
+    private boolean requestHasEnoughPositions(Order order, Shareholder shareholder, int position) {
+        return order.getSide() == Side.BUY || shareholder.hasEnoughPositionsOn(this, position);
     }
 
     public void setLastTradePrice(int price) {
