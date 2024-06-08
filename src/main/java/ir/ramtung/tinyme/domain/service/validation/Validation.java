@@ -38,9 +38,9 @@ public class Validation {
     public void validate(EnterOrderRq enterOrderRq, Security security, Broker broker, Shareholder shareholder)
             throws InvalidRequestException {
                 List<String> errorList = new LinkedList<>();
-                ValidationArg  validationArg  = new ValidationArg(enterOrderRq, shareholder, broker, security);
+                ValidationArg validationArg  = new ValidationArg(enterOrderRq, shareholder, broker, security);
                 validatorHead.validate(validationArg, errorList);
-                if (! errorList.isEmpty())
+                if (!errorList.isEmpty())
                     throw new InvalidRequestException(errorList);
         }
 

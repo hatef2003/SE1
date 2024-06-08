@@ -17,7 +17,8 @@ public class AuctionValidator extends BaseValidator {
                     errorList.add(Message.AUCTION_CANNOT_HANDLE_STOP_LIMIT_ORDER);
             }
         }
-        if(next!=null)
+        if (next != null)
             next.validate(validationArg, errorList);
     }
+
 }

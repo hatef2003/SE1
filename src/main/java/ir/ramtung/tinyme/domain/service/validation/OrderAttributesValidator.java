@@ -13,7 +13,7 @@ public class OrderAttributesValidator extends BaseValidator {
             errorList.add(Message.ORDER_QUANTITY_NOT_POSITIVE);
         if (validationArg.enterOrderRq().getPrice() <= 0)
             errorList.add(Message.ORDER_PRICE_NOT_POSITIVE);
-        if(next != null)
+        if (next != null)
             next.validate(validationArg, errorList);
     }
 

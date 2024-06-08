@@ -11,4 +11,5 @@ public class MinimumExceptionQuantityValidator extends BaseValidator{
         if (validationArg.enterOrderRq().getMinimumExecutionQuantity() < 0)
             errorList.add(Message.MINIMUM_EXCEPTION_QUANTITY_CANNOT_BE_NEGATIVE);
     }
+
 }

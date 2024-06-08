@@ -11,7 +11,7 @@ public class IceBergValidator extends BaseValidator {
             errorList.add(Message.INVALID_PEAK_SIZE);
         if (validationArg.enterOrderRq().getPeakSize() != 0 && validationArg.enterOrderRq().getQuantity() < validationArg.enterOrderRq().getPeakSize())
             errorList.add(Message.PEAK_SIZE_MUST_BE_LESS_THAN_TOTAL_QUANTITY);
-        if(next!= null)
+        if (next != null)
             next.validate(validationArg, errorList);
     }
 
@@ -19,4 +19,5 @@ public class IceBergValidator extends BaseValidator {
         return validationArg.enterOrderRq().getPeakSize() >= 0
                 && validationArg.enterOrderRq().getPeakSize() < validationArg.enterOrderRq().getQuantity();
     }
+
 }

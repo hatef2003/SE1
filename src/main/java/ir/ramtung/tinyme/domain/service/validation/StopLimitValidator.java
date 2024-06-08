@@ -17,7 +17,8 @@ public class StopLimitValidator extends BaseValidator {
         if (validationArg.enterOrderRq().getStopLimit() < 0)
             errorList.add(Message.INVALID_STOP_LIMIT);
 
-        if(next!= null)
+        if(next != null)
             next.validate(validationArg, errorList);
     }
+
 }
