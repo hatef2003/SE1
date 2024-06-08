@@ -30,9 +30,9 @@ public class Security {
     @Builder.Default
     private MatchingState state = MatchingState.CONTINUOUS;
 
-    public MatchResult newOrder(EnterOrderRq enterOrderRq, Broker broker, Shareholder shareholder, Matcher matcher) {
-        int position = orderBook.totalSellQuantityByShareholder(shareholder) + enterOrderRq.getQuantity();
-        if (!requestHasEnoughPositions(enterOrderRq, shareholder, position))
+    public MatchResult newOrder(Order order, Broker broker, Shareholder shareholder, Matcher matcher) {
+        if (!requestHasEnoughPositions(order, shareholder,
+                orderBook.totalSellQuantityByShareholder(shareholder) + order.getQuantity()))
             return MatchResult.notEnoughPositions();
 
         return matchNewOrder(order, matcher);
@@ -105,7 +105,7 @@ public class Security {
     private MatchResult updateValidOrder(Order order, EnterOrderRq updateOrderRq, Matcher matcher) {
         int position = orderBook.totalSellQuantityByShareholder(order.getShareholder()) - order.getQuantity()
                 + updateOrderRq.getQuantity();
-        if (!requestHasEnoughPositions(updateOrderRq, order.getShareholder(), position))
+        if (!requestHasEnoughPositions(order, order.getShareholder(), position))
             return MatchResult.notEnoughPositions();
         Order firstOrderBeforeAnyChange = order.snapshot();
 
