@@ -35,7 +35,8 @@ public class Matcher {
     }
 
     private MatchResult handleMinimumExceptionQuantity(LinkedList<Trade> trades, Order newOrder) {
-        if (trades.stream().mapToInt(Trade::getQuantity).sum() >= newOrder.getMinimumExecutionQuantity()) {
+        if (isTradeBiggerThanMEQ(newOrder, trades))
+        {
             newOrder.makeMinimumExceptionZero();
             return MatchResult.executed(newOrder, trades);
         }
@@ -44,6 +45,11 @@ public class Matcher {
         else
             rollbackBuyTrades(newOrder, trades);
         return MatchResult.notEnoughTrades();
+    }
+
+    private static boolean isTradeBiggerThanMEQ(Order newOrder, LinkedList<Trade> trades) {
+        int tradeQuantity = trades.stream().mapToInt(Trade::getQuantity).sum();
+        return tradeQuantity >= newOrder.getMinimumExecutionQuantity();
     }
 
     private Trade makeTrade(Order matchingOrder, Order newOrder, LinkedList<Trade> trades)
@@ -80,7 +86,8 @@ public class Matcher {
 
     protected void rollbackBuyTrades(Order newOrder, LinkedList<Trade> trades) {
         assert newOrder.getSide() == Side.BUY;
-        newOrder.getBroker().increaseCreditBy(trades.stream().mapToLong(Trade::getTradedValue).sum());
+        long totalTradeValue = trades.stream().mapToLong(Trade::getTradedValue).sum();
+        newOrder.getBroker().increaseCreditBy(totalTradeValue);
         trades.forEach(trade -> trade.getSell().getBroker().decreaseCreditBy(trade.getTradedValue()));
 
         ListIterator<Trade> it = trades.listIterator(trades.size());
@@ -92,7 +99,7 @@ public class Matcher {
     protected void rollbackSellTrades(Order newOrder, LinkedList<Trade> trades) {
         assert newOrder.getSide() == Side.SELL;
         for (Trade trade : trades) {
-            newOrder.getBroker().decreaseCreditBy((long) trade.getPrice() * trade.getQuantity());
+            newOrder.getBroker().decreaseCreditBy(getValue(trade.getPrice(), trade.getQuantity()));
             newOrder.getSecurity().getOrderBook().restoreBuyOrder(trade.getBuy());
         }
     }
@@ -121,4 +128,9 @@ public class Matcher {
         }
         return result;
     }
+
+    protected static long getValue(int price, int quantity) {
+        return (long) price * quantity;
+    }
+
 }

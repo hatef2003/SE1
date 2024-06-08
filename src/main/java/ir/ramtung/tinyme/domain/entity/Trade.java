@@ -23,11 +23,11 @@ public class Trade {
         Order snapshot1 = order1.snapshot();
         Order snapshot2 = order2.snapshot();
         if (order1.getSide() == Side.BUY) {
-            this.buy = snapshot1;
-            this.sell = snapshot2;
+            buy = snapshot1;
+            sell = snapshot2;
         } else {
-            this.buy = snapshot2;
-            this.sell = snapshot1;
+            buy = snapshot2;
+            sell = snapshot1;
         }
     }
 

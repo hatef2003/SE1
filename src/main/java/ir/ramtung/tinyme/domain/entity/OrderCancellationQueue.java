@@ -48,7 +48,7 @@ public class OrderCancellationQueue {
                 deactivatedSellOrders.stream()).toList())
             if (order.isActive(lastTradePrice)) {
                 activatedList.add(order);
-                this.removeFromDeactivatedList(order.getOrderId());
+                removeFromDeactivatedList(order.getOrderId());
             }
         return activatedList;
     }

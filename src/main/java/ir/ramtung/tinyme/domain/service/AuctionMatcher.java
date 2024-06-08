@@ -85,10 +85,6 @@ public class AuctionMatcher extends Matcher {
         return trades;
     }
 
-    private static long getValue(int price, int quantity) {
-        return (long) price * quantity;
-    }
-
     @Override
     public MatchResult execute(Order order) {
         if (!order.getBroker().hasEnoughCredit(order.getValue()))

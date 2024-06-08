@@ -140,12 +140,12 @@ public class Order {
         return quantity;
     }
 
-    public boolean canTradeWithPrice(int price)
+    public boolean canTradeWithPrice(int otherPrice)
     {
         if(side==Side.SELL)
-            return price>= this.price ;
+            return otherPrice>= price ;
         else
-            return price<=this.price;
+            return otherPrice<=price;
     }
 
     public int getAllQuantity()
@@ -159,7 +159,7 @@ public class Order {
     }
     public void makeMinimumExceptionZero()
     {
-        this.minimumExecutionQuantity = 0;
+        minimumExecutionQuantity = 0;
     }
 
     public boolean canMatch()
