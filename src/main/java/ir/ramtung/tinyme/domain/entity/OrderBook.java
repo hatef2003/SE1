@@ -36,10 +36,9 @@ public class OrderBook {
 
     public Order findByOrderId(Side side, long orderId) {
         var queue = getQueue(side);
-        for (Order order : queue) {
+        for (Order order : queue)
             if (order.getOrderId() == orderId)
                 return order;
-        }
         return null;
     }
 
