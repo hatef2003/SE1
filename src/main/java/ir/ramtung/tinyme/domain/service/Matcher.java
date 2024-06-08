@@ -35,13 +35,12 @@ public class Matcher {
         {
             newOrder.makeMinimumExceptionZero();
             return MatchResult.executed(newOrder, trades);
-        } else {
-            if (newOrder.getSide() == Side.SELL)
-                rollbackSellTrades(newOrder, trades);
-            else
-                rollbackBuyTrades(newOrder, trades);
-            return MatchResult.notEnoughTrades();
         }
+        if (newOrder.getSide() == Side.SELL)
+            rollbackSellTrades(newOrder, trades);
+        else
+            rollbackBuyTrades(newOrder, trades);
+        return MatchResult.notEnoughTrades();
     }
 
     private Trade makeTrade(Order matchingOrder, Order newOrder, LinkedList<Trade> trades)

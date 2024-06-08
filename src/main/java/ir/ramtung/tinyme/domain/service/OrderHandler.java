@@ -141,7 +141,7 @@ public class OrderHandler {
             publishTradeEvent(trades);
             security.changeMatchingStateRq(changeMatchingStateRq.getTargetState());
             if (!trades.isEmpty())
-                this.activateStopLimitOrders(security, changeMatchingStateRq.getRequestId());
+                activateStopLimitOrders(security, changeMatchingStateRq.getRequestId());
         } else
             security.changeMatchingStateRq(changeMatchingStateRq.getTargetState());
     }
