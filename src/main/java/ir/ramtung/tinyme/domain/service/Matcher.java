@@ -31,8 +31,11 @@ public class Matcher {
             matchTwoOrder(matchingOrder, newOrder, orderBook);
         }
 
-        if (trades.stream().mapToInt(Trade::getQuantity).sum() >= newOrder.getMinimumExecutionQuantity())
-        {
+       return handleMinimumExceptionQuantity(trades, newOrder);
+    }
+
+    private MatchResult handleMinimumExceptionQuantity(LinkedList<Trade> trades, Order newOrder) {
+        if (trades.stream().mapToInt(Trade::getQuantity).sum() >= newOrder.getMinimumExecutionQuantity()) {
             newOrder.makeMinimumExceptionZero();
             return MatchResult.executed(newOrder, trades);
         }
