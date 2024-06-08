@@ -30,6 +30,7 @@ public class OrderHandler {
     private final EventPublisher eventPublisher;
     private final Matcher matcher;
     private final AuctionMatcher auctionMatcher;
+    private OrderFactory orderFactory;
 
     public OrderHandler(SecurityRepository securityRepository, BrokerRepository brokerRepository,
             ShareholderRepository shareholderRepository, EventPublisher eventPublisher, Matcher matcher) {
@@ -39,6 +40,7 @@ public class OrderHandler {
         this.eventPublisher = eventPublisher;
         this.matcher = matcher;
         this.auctionMatcher = new AuctionMatcher();
+        orderFactory = new OrderFactory(securityRepository, shareholderRepository, brokerRepository);
     }
 
     private void activateStopLimitOrders(Security security, long request_id) {
@@ -80,9 +82,9 @@ public class OrderHandler {
         else
             eventPublisher.publish(new OrderUpdatedEvent(enterOrderRq.getRequestId(), enterOrderRq.getOrderId()));
 
-        if (security.getState() == MatchingState.AUCTION) 
+        if (security.getState() == MatchingState.AUCTION)
             publishOpenPriceEvent(security);
-        
+
         if (!matchResult.trades().isEmpty())
             eventPublisher.publish(new OrderExecutedEvent(enterOrderRq.getRequestId(), enterOrderRq.getOrderId(),
                     matchResult.trades().stream().map(TradeDTO::new).collect(Collectors.toList())));
@@ -99,7 +101,7 @@ public class OrderHandler {
 
             MatchResult matchResult;
             if (enterOrderRq.getRequestType() == OrderEntryType.NEW_ORDER)
-                matchResult = security.newOrder(enterOrderRq, broker, shareholder, securityMatcher);
+                matchResult = security.newOrder(orderFactory.createOrder(enterOrderRq), broker, shareholder, securityMatcher);
             else
                 matchResult = security.updateOrder(enterOrderRq, securityMatcher);
 
@@ -120,7 +122,7 @@ public class OrderHandler {
             Security security = securityRepository.findSecurityByIsin(deleteOrderRq.getSecurityIsin());
             security.deleteOrder(deleteOrderRq);
             eventPublisher.publish(new OrderDeletedEvent(deleteOrderRq.getRequestId(), deleteOrderRq.getOrderId()));
-            if (security.getState() == MatchingState.AUCTION) 
+            if (security.getState() == MatchingState.AUCTION)
                 publishOpenPriceEvent(security);
         } catch (InvalidRequestException ex) {
             eventPublisher.publish(
@@ -193,6 +195,10 @@ public class OrderHandler {
             if (state == MatchingState.AUCTION && enterOrderRq.getStopLimit() != 0)
                 errors.add(Message.AUCTION_CANNOT_HANDLE_STOP_LIMIT_ORDER);
         }
+        if (enterOrderRq.getStopLimit() < 0)
+            errors.add(Message.INVALID_STOP_LIMIT);
+        if (enterOrderRq.getPeakSize() != 0 && enterOrderRq.getQuantity() < enterOrderRq.getPeakSize())
+            errors.add(Message.PEAK_SIZE_MUST_BE_LESS_THAN_TOTAL_QUANTITY);
 
         if (!errors.isEmpty())
             throw new InvalidRequestException(errors);

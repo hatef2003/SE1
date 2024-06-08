@@ -31,6 +31,10 @@ public class Matcher {
             matchTwoOrder(matchingOrder, newOrder, orderBook);
         }
 
+       return handleMinimumExceptionQuantity(trades, newOrder);
+    }
+
+    private MatchResult handleMinimumExceptionQuantity(LinkedList<Trade> trades, Order newOrder) {
         if (isTradeBiggerThanMEQ(newOrder, trades))
         {
             newOrder.makeMinimumExceptionZero();
